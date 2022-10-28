@@ -25,10 +25,10 @@ const Login = () => {
   const [clicked, setClicked] = useState("no");
   const handleEmailChange = useCallback((value) => setUser(value), []);
   const handleSubmit = async (event) => {
-    setErrorUserEmpty(false)
-    setErrorPasswordEmpty(false)
-    setErrorUserWrong(false)
-    setErrorPasswordWrong(false)
+    setErrorUserEmpty(false);
+    setErrorPasswordEmpty(false);
+    setErrorUserWrong(false);
+    setErrorPasswordWrong(false);
     setClicked("yes");
     event.preventDefault();
     const headers = {
@@ -42,6 +42,7 @@ const Login = () => {
     };
 
     const url = new URL("https://fbapi.sellernext.com/user/login");
+
     if (user === "" && pass === "") {
       setClicked("no");
       setErrorUserEmpty(true);
@@ -53,9 +54,8 @@ const Login = () => {
       } else if (pass === "") {
         setClicked("no");
         setErrorPasswordEmpty(true);
-      } 
-      else {
-        if (user === "admin" && pass === "password123"){
+      } else {
+        if (user === "admin" && pass === "password123") {
           get_fetch(url, data, headers).then((data) => {
             if (data.success === true) {
               sessionStorage.setItem("token", data.data.token);
@@ -69,21 +69,18 @@ const Login = () => {
               setClicked("no");
             }
           });
-        }
-        else{
-          if (user !== "admin"){
+        } else {
+          if (user !== "admin") {
             setClicked("no");
-            setErrorUserWrong(true)
+            setErrorUserWrong(true);
           }
-          if (pass !== "password"){
+          if (pass !== "password") {
             setClicked("no");
-            setErrorPasswordWrong(true)
+            setErrorPasswordWrong(true);
           }
         }
       }
     }
-
-   
   };
 
   return (
@@ -93,7 +90,9 @@ const Login = () => {
           <Form onSubmit={handleSubmit}>
             <FormLayout>
               <TextField
-              error={(errorUserEmpty === true || errorUserWrong === true) && true}
+                error={
+                  (errorUserEmpty === true || errorUserWrong === true) && true
+                }
                 requiredIndicator
                 value={user}
                 onChange={handleEmailChange}
@@ -104,13 +103,20 @@ const Login = () => {
                 }
               />
               {errorUserEmpty && (
-                <InlineError message="Empty field of username" fieldID="myFieldID" />
+                <InlineError
+                  message="Empty field of username"
+                  fieldID="myFieldID"
+                />
               )}
               {errorUserWrong && (
                 <InlineError message="Invalid username" fieldID="myFieldID" />
               )}
               <TextField
-              error={(errorPasswordEmpty === true || errorPasswordWrong === true) && true}
+                error={
+                  (errorPasswordEmpty === true ||
+                    errorPasswordWrong === true) &&
+                  true
+                }
                 requiredIndicator
                 onChange={(e) => setPass(e)}
                 label="Password"
@@ -121,7 +127,10 @@ const Login = () => {
                 }
               />
               {errorPasswordEmpty && (
-                <InlineError message="Empty field of password" fieldID="myFieldID" />
+                <InlineError
+                  message="Empty field of password"
+                  fieldID="myFieldID"
+                />
               )}
               {errorPasswordWrong && (
                 <InlineError message="Invalid password" fieldID="myFieldID" />
