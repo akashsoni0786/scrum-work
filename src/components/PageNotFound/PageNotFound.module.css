@@ -1,0 +1,10 @@
+.centerall{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    /* text-align: center; */
+}
+.imgsizing{
+    height: 100%;
+    width: 100%;
+}

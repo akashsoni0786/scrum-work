@@ -1,0 +1,7 @@
+.rows{
+    display: flex;
+    justify-content: center;
+}
+.upperheading{
+    margin: 20px 0px;
+}
