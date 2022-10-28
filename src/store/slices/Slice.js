@@ -1,8 +1,7 @@
 import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
-  value: 0,
-  amount: 1,
+  username: "",
 };
 
 export const storeSlice = createSlice({
@@ -10,11 +9,9 @@ export const storeSlice = createSlice({
   initialState,
   reducers: {
     login: (state, actions) => {
-      // const temp = state.game.map((i) =>
-      //   actions.payload.id === i.id ? { ...i, rotate: true } : i
-      // );
       return {
         ...state,
+        username: actions.payload,
       };
     },
   },

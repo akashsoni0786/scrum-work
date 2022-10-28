@@ -1,4 +1,4 @@
-export const get_fetch = async (url, payload, header) => {
+export const get_fetch = async (url, payload="", header="") => {
   for (let i in payload) {
     url.searchParams.append(i, payload[i]);
   }

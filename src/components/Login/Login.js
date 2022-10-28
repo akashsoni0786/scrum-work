@@ -13,9 +13,13 @@ import { useState, useCallback } from "react";
 import "@shopify/polaris/build/esm/styles.css";
 import { useNavigate } from "react-router-dom";
 import { get_fetch } from "../../utils/methods/Fetch";
+import { useDispatch, useSelector } from "react-redux";
+import { login } from "../../store/slices/Slice";
 
 const Login = () => {
   const navigate = useNavigate();
+  
+  const dispatch = useDispatch();
   const [errorUserEmpty, setErrorUserEmpty] = useState(false);
   const [errorPasswordEmpty, setErrorPasswordEmpty] = useState(false);
   const [errorUserWrong, setErrorUserWrong] = useState(false);
@@ -59,6 +63,8 @@ const Login = () => {
           get_fetch(url, data, headers).then((data) => {
             if (data.success === true) {
               sessionStorage.setItem("token", data.data.token);
+              sessionStorage.setItem("username", user);
+              dispatch(login(user));
               navigate("/dashboard", {
                 state: { mytoken: sessionStorage.getItem("token") },
               });

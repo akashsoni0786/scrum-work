@@ -3,6 +3,7 @@ import { Banner, Card, Frame, Heading, Page, Columns, Badge, Tabs } from "@shopi
 import "@shopify/polaris/build/esm/styles.css";
 import Navigationbar from '../Navbar/Navbar';
 import TableData from '../Tables/TableData';
+import TopNavbar from '../Topbar/Topbar';
 
 
 const Dashboard = () => {
@@ -74,6 +75,7 @@ const Dashboard = () => {
 
   return (
     <div>
+      <TopNavbar />
        <Columns
         columns={{ xs: 2,sm:"0.5fr 2fr",md:".5fr 2fr" }}
         spacing={{xs:5}}
