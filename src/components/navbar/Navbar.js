@@ -29,7 +29,7 @@ function Navigationbar() {
               icon: HomeMinor,
             },
             {
-              url: "/path",
+              // url: "/path",
               label: "Order",
               icon: OrdersMajor,
               badge: "15",
@@ -78,7 +78,7 @@ function Navigationbar() {
            
           ]}
           rollup={{
-            after: 7,
+            after: 8,
             view: "view",
             hide: "hide",
             activePath: "/",
@@ -104,7 +104,7 @@ function Navigationbar() {
               selected: true,
               subNavigationItems: [
                 {
-                  url: '/?path=/story/all-components-navigation--navigation-with-multiple-secondary-navigations',
+                  url: '/?path=/story/',
                   disabled: false,
                   selected: false,
                   label: 'Overview',

@@ -12,3 +12,11 @@ export const post_fetch = async (url, payload, header) => {
     body: JSON.stringify(payload),
   }).then((response) => response.json());
 };
+
+
+export const fetch_without_payload = async (methods,url, header) => {
+  return fetch(url, {
+    method: methods,
+    headers: header
+  }).then((response) => response.json());
+};

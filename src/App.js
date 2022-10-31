@@ -1,8 +1,8 @@
 import { Route, Routes } from "react-router-dom";
 import "./App.css";
-import Dashboard from "./components/Dashboard/Dashboard";
-import Login from "./components/Login/Login";
-import PageNotFound from "./components/PageNotFound/PageNotFound";
+import Dashboard from "./components/dashboard/Dashboard";
+import Login from "./components/login/Login";
+import PageNotFound from "./components/pageNotFound/PageNotFound";
 
 function App() {
   return (
