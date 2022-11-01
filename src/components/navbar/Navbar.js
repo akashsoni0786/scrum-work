@@ -123,19 +123,19 @@ function Navigationbar() {
                   },
                 },
                 {
-                  url: '/?path=/story/all-components-navigation--navigation-with-multiple-secondary-navigations',
+                  url: '/?path=/story/',
                   disabled: false,
                   selected: false,
                   label: 'Product Linking',
                 },
                 {
-                  url: '/?path=/story/all-components-navigation--navigation-with-multiple-secondary-navigations',
+                  url: '/?path=/story/',
                   disabled: false,
                   selected: false,
                   label: 'Settings',
                 },
                 {
-                  url: '/?path=/story/all-components-navigation--navigation-with-multiple-secondary-navigations',
+                  url: '/?path=/story/',
                   disabled: false,
                   selected: false,
                   label: 'FAQ',

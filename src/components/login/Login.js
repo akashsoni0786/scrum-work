@@ -13,7 +13,7 @@ import { useState, useCallback } from "react";
 import "@shopify/polaris/build/esm/styles.css";
 import { useNavigate } from "react-router-dom";
 import { get_fetch } from "../../utils/methods/Fetch";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import { login } from "../../store/slices/Slice";
 
 const Login = () => {
@@ -142,7 +142,7 @@ const Login = () => {
                 <InlineError message="Invalid password" fieldID="myFieldID" />
               )}
               <Button primary submit>
-                {clicked == "no" ? (
+                {clicked === "no" ? (
                   <>Submit</>
                 ) : (
                   <Spinner accessibilityLabel="Spinner example" size="small" />

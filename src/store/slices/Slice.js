@@ -4,7 +4,8 @@ const initialState = {
   username: "",
   gridData :[],
   showHeader:true,
-  filteredChoice:[]
+  filteredChoice:[],
+  currentTab : "All",
 };
 
 export const storeSlice = createSlice({
@@ -41,10 +42,16 @@ export const storeSlice = createSlice({
         ...state,
         showHeader:actions.payload,
       };
+    },
+    changeTab:(state, actions) => {
+      return {
+        ...state,
+        currentTab:actions.payload,
+      };
     }
   },
 });
 
 // Action creators are generated for each case reducer function
-export const { login, alldata, choices, removeChoices, hideHeaders } = storeSlice.actions;
+export const { login, alldata, choices, removeChoices, hideHeaders, changeTab } = storeSlice.actions;
 export default storeSlice.reducer; // storeReducer  in Store.js

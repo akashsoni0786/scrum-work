@@ -3,12 +3,18 @@ import { DownOutlined } from "@ant-design/icons";
 import { Button, Form, Radio, Space, Switch, Table } from "antd";
 import React, { useCallback, useState } from "react";
 import Rightbar from "../rightbar/Rightbar";
-import { Stack, Tag } from "@shopify/polaris";
+import { Badge, Icon, Stack, Tag } from "@shopify/polaris";
 import Searchbar from "../searchbar/Searchbar.js";
 import CssFile from "./TableData.module.css";
 import { fetch_without_payload } from "../../utils/methods/Fetch.js";
+import { MobileVerticalDotsMajor } from "@shopify/polaris-icons";
 import { useDispatch, useSelector } from "react-redux";
-import { alldata, hideHeaders, removeChoices } from "../../store/slices/Slice.js";
+import {
+  alldata,
+  hideHeaders,
+  removeChoices,
+} from "../../store/slices/Slice.js";
+import { headers } from "../../utils/api/Headers";
 const ftghfg = [
   {
     title: "Name",
@@ -52,12 +58,11 @@ const ftghfg = [
   },
 ];
 
-
 const Tables = () => {
-
   const data = useSelector((state) => state.storeWork.gridData);
   const showHeader = useSelector((state) => state.storeWork.showHeader);
-  const filterTage = useSelector(state=> state.storeWork.filteredChoice)
+  const filterTage = useSelector((state) => state.storeWork.filteredChoice);
+  const currentTab = useSelector((state) => state.storeWork.currentTab);
 
   const defaultExpandable = {
     expandedRowRender: (record) => <p>{record.children}</p>,
@@ -69,6 +74,8 @@ const Tables = () => {
   const [expandable, setExpandable] = useState(defaultExpandable);
   const [rowSelection, setRowSelection] = useState({});
   const [hasData, setHasData] = useState(true);
+  
+
   const showDrawer = () => {
     setOpen(true);
   };
@@ -90,13 +97,12 @@ const Tables = () => {
       title: "Title",
       dataIndex: "title",
       key: "title",
-      // width: "12%",
     },
     {
       title: "Product Details",
       dataIndex: "product_details",
-      // width: "30%",
       key: "product_details",
+      width: "24%",
     },
     {
       title: "Template",
@@ -112,6 +118,7 @@ const Tables = () => {
       title: "Amazon Status",
       dataIndex: "amazon_status",
       key: "amazon_status",
+      width: "20%",
     },
     {
       title: "Activity",
@@ -122,6 +129,11 @@ const Tables = () => {
       title: "Actions",
       dataIndex: "actions",
       key: "actions",
+      render: () => (
+        <Button>
+          <Icon source={MobileVerticalDotsMajor} color="base" />
+        </Button>
+      ),
     },
   ];
 
@@ -135,96 +147,228 @@ const Tables = () => {
       ),
     },
     {
-      title: "SKU",
-      dataIndex: "sku",
-      key: "sku",
-      // width: "12%",
-    },
-    {
-      title: "Barcode",
-      dataIndex: "barcode",
-      // width: "30%",
-      key: "barcode",
-    },
-    {
-      title: "ASIN",
-      dataIndex: "asin",
-      key: "asin",
-    },
-    {
       title: "Product Title",
       dataIndex: "product_title",
       key: "product_title",
     },
-    
+    {
+      title: "Product Details",
+      dataIndex: "product_details",
+      key: "product_details",
+      width: "24%",
+    },
+    {
+      title: "Inventory",
+      dataIndex: "inventory",
+      key: "inventory",
+      width: "14%",
+    },
+    {
+      title: "Amazon Status",
+      dataIndex: "amazon_status",
+      key: "amazon_status",
+    },
+    {
+      title: "Activity",
+      dataIndex: "activity",
+      key: "activity",
+    },
   ];
 
-  React.useEffect(() => {
-    const fetchalldata = () => {
-      setHasData(false)
-      setLoading(true)
-      const headers = {
-        "Ced-Source-Id": 500,
-        "Ced-Source-Name": "shopify",
-        "Ced-Target-Id": 530,
-        "Ced-Target-Name": "amazon",
-        appCode:
-          "eyJzaG9waWZ5IjoiYW1hem9uX3NhbGVzX2NoYW5uZWwiLCJhbWF6b24iOiJhbWF6b24ifQ== appTag: amazon_sales_channel",
-
-        authorization:
-          "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJ1c2VyX2lkIjoiNjMzMjlkN2YwNDUxYzA3NGFhMGUxNWE4Iiwicm9sZSI6ImN1c3RvbWVyIiwiZXhwIjoxNjY3MjI1NTMwLCJpc3MiOiJodHRwczpcL1wvYXBwcy5jZWRjb21tZXJjZS5jb20iLCJ0b2tlbl9pZCI6IjYzNWY5ZjdhMGI5YjIwMTVlNTQ0MjM2NyJ9.Tbaa3G1Jv8r7xAg6Y16fK2FTTso8j-NuI5IcMn9FJ8W4bd_k4uiNqJVMC__NC1OWn8ldrcmzJGwffop5rNQLRIdObWbIzr2TBxmDwtJKRSMh-4-amDO6wJQiJSe1rl6CIyZXMcZnAB3rPf9vka4JWhFfNntLgZlGfoLWYCnOsww_xygFyvxXKNrBEZic3XHBn3fnrlDahyrPwp0M3VQaE2lNJDZgSERvdkbLkL-Kkj9St7GT9nc01k8TcVGiKmy84a9MJd6VmeZqNXaamG-Fm-_ju1tvZfwO3O3Bln8BaCDvgpgqbYlLEEUBROJbccYFl46-z_GqIBVgKbdaCrl3KQ",
-      };
-      const url = new URL(
-        "https://multi-account.sellernext.com/home/public/connector/product/getRefineProducts"
-      );
-      fetch_without_payload("GET", url, headers).then((response) => {
-        let fetchedData = [];
-        response.data.rows.map((item, index) => {
-          let row = {
-            key: index,
-            image: item.main_image,
-            title: item.title,
-            product_details: "",
-            template: "",
-            inventory: "",
-            amazon_status: "",
-            activity: "",
-            actions: "",
-            description: [
-              item.items.map((subItem, subIndex) => ({
-                key: subIndex,
-                img:"https://www.useourfacilities.com/css/images/no-image-template.png",
-                  // subItem.image === "" ? (
-                  //   <img
-                  //     className={CssFile.product_image}
-                  //     alt=""
-                  //     src={subItem.image}
-                  //   />
-                  // ) : (
-                  //   <img
-                  //     className={CssFile.product_image}
-                  //     alt=""
-                  //     src="https://www.useourfacilities.com/css/images/no-image-template.png"
-                  //   />
-                  // ),
-                price: subItem.price,
-                sku: subItem.sku,
-                barcode: subItem.barcode,
-                asin: subItem.source_product_id,
-                product_title: subItem.title,
-              })),
-            ],
-          };
-          fetchedData.push(row);
-        });
-        console.log("fetchedData",fetchedData)
-        dispatch(alldata(fetchedData));
-        setLoading(false)
-        setHasData(true)
+  const hasChildren = (items) => {
+    return (
+      <>
+        <p>
+          <b>Price :</b> {items.price || "N/A"}
+        </p>
+        <p>
+          <b>SKU</b> : {items.sku || "N/A"}
+        </p>
+        <p>
+          <b>Barcode</b> : {items.barcode || "N/A"}
+        </p>
+        <p>
+          <b>ASIN</b> : {items.source_product_id || "N/A"}
+        </p>
+      </>
+    );
+  };
+  const forParent = (items) => {
+    return (
+      <>
+        <p>
+          <b>SKU</b> : {items.sku || "N/A"}
+        </p>
+        <p>
+          <b>ASIN</b> : {items.source_product_id || "N/A"}
+        </p>
+      </>
+    );
+  };
+  const inventoryCalculate = (item) => {
+    let quantity = 0;
+    item.map((subItem, subIndex) => {
+      quantity = quantity + Number(`${subItem.quantity || 0}`);
+    });
+    return (
+      quantity +
+      " in Stock " +
+      `${item.length === 1 ? "" : item.length + " variants"}`
+    );
+  };
+  const fetchalldata = () => {
+    setHasData(false);
+    setLoading(true);
+    const url = new URL(
+      "https://multi-account.sellernext.com/home/public/connector/product/getRefineProducts"
+    );
+    fetch_without_payload("POST", url, headers).then((response) => {
+      let fetchedData = [];
+      console.log(response.data.rows)
+      response.data.rows.map((item, index) => {
+        let row = {
+          key: index,
+          source_product_id: item.source_product_id,
+          image: item.main_image,
+          title: item.title,
+          template: "N/A",
+          type: item.type,
+          description: item.items.map((subItem, subIndex) => ({
+            key: subIndex,
+            img:
+              subItem.main_image ||
+              "https://www.useourfacilities.com/css/images/no-image-template.png",
+            product_details: hasChildren(subItem),
+            product_title: subItem.title,
+            source_product_id: subItem.source_product_id,
+            inventory: subItem.quantity || 0,
+            amazon_status: item.error ?  <Badge status="critical">Error</Badge> : <Badge>{item.status || "Not Listed"}</Badge>,
+          })),
+          product_details:item.items.length === 1 ? 
+          
+          hasChildren(item.items[0]):
+          
+          item.items.map((subItem, subIndex) => {
+            if (subItem.source_product_id === item.source_product_id) {
+              return forParent(subItem);
+            }
+          }),
+          inventory: inventoryCalculate(item.items),
+          amazon_status:<Badge>{item.status || "Not Listed"}</Badge> ,
+          
+          // <Badge>Not Listed</Badge>,
+          activity: "--",
+          actions: "",
+        };
+        fetchedData = [...fetchedData, row];
       });
+      
+      dispatch(alldata(fetchedData));
+      setLoading(false);
+      setHasData(true);
+    });
+  };
+  const fetchRestData = () => {
+    setHasData(false);
+    setLoading(true);
+    var payloads;
+    if (currentTab === "Not Listed") {
+      payloads = {
+        count: 50,
+        "filter[cif_amazon_multi_inactive][1]": "Not Listed",
+        productOnly: true,
+        target_marketplace: "eyJtYXJrZXRwbGFjZSI6ImFsbCIsInNob3BfaWQiOm51bGx9",
+      };
     };
-    fetchalldata();
-  }, []);
+    if (currentTab === "Inactive") {
+      payloads = {
+        count: 50,
+        "filter[items.status][1]": "Inactive",
+        productOnly: true,
+        target_marketplace: "eyJtYXJrZXRwbGFjZSI6ImFsbCIsInNob3BfaWQiOm51bGx9",
+      };
+    };
+    if (currentTab === "Incomplete") {
+      payloads = {
+        count: 50, 
+        "filter[items.status][1]": "Incomplete",
+        productOnly: true,
+        target_marketplace: "eyJtYXJrZXRwbGFjZSI6ImFsbCIsInNob3BfaWQiOm51bGx9",
+      };
+    };
+    if (currentTab === "Active") {
+      payloads = {
+        count: 50, 
+        "filter[items.status][1]": "Active",
+        productOnly: true,
+        target_marketplace: "eyJtYXJrZXRwbGFjZSI6ImFsbCIsInNob3BfaWQiOm51bGx9",
+      };
+    };
+    if (currentTab === "Error") {
+      payloads = {
+        count: 50, 
+        "filter[cif_amazon_multi_activity][1]": "error",
+        productOnly: true,
+        target_marketplace: "eyJtYXJrZXRwbGFjZSI6ImFsbCIsInNob3BfaWQiOm51bGx9",
+      };
+    };
+    const url = new URL(
+      "https://multi-account.sellernext.com/home/public/connector/product/getRefineProducts"
+    );
+    for (let i in payloads) {
+      url.searchParams.append(i, payloads[i]);
+    }
+    
+    fetch_without_payload("POST", url, headers).then((response) => {
+      let fetchedData = [];
+      
+      response.data.rows.map((item, index) => {
+        let row = {
+          key: index,
+          source_product_id: item.source_product_id,
+          image: item.main_image,
+          title: item.title,
+          template: "N/A",
+          type: item.type,
+          description: item.items.map((subItem, subIndex) => ({
+            key: subIndex,
+            img:
+              subItem.main_image ||
+              "https://www.useourfacilities.com/css/images/no-image-template.png",
+            product_details: hasChildren(subItem),
+            product_title: subItem.title,
+            source_product_id: subItem.source_product_id,
+            inventory: subItem.quantity || 0,
+            amazon_status: subItem.error ?  <Badge status="critical">Error</Badge> : <Badge>{subItem.status || "N/A"}</Badge>,
+          })),
+          product_details:item.items.length === 1 ? 
+          
+          hasChildren(item.items[0]):
+          
+          item.items.map((subItem, subIndex) => {
+            if (subItem.source_product_id === item.source_product_id) {
+              return forParent(subItem);
+            }
+          }),
+          inventory: inventoryCalculate(item.items),
+          amazon_status: item.status || <Badge>Not Listed</Badge>,
+          activity: "--",
+          actions: "",
+        };
+        fetchedData = [...fetchedData, row];
+      });
+
+      dispatch(alldata(fetchedData));
+      setLoading(false);
+      setHasData(true);
+    });
+  };
+ 
+  React.useEffect(() => {
+    if (currentTab === "All") fetchalldata();
+
+    else fetchRestData();
+  }, [currentTab]);
 
   const tableProps = {
     loading,
@@ -232,30 +376,36 @@ const Tables = () => {
     showHeader,
     rowSelection,
   };
+  const subtableProps = {
+    loading,
+    showHeader,
+    rowSelection,
+  };
+
   // const [filterTage, setFilterTage] = useState(filteredChoice)
 
   // React.useEffect(()=>{
   //   dispatch(hideHeaders(false))
   // },[filterTage])
-  const removeTag = 
-  useCallback(
+  const removeTag = useCallback(
     (tag) => () => {
       // alert(tag)
       // filterTage.filter((previousTag) => previousTag !== tag);
-      dispatch(removeChoices(''));
+      dispatch(removeChoices(""));
       dispatch(hideHeaders(true));
-    }
-    ,[]
+    },
+    []
   );
 
-  const tagMarkup = filterTage.map((option) => 
+  const tagMarkup = filterTage.map((option) => {
+    dispatch(hideHeaders(false));
+    return (
+      <Tag key={option} onRemove={removeTag(option)}>
+        {option}
+      </Tag>
+    );
+  });
 
-    {
-      dispatch(hideHeaders(false))
-      return <Tag key={option} onRemove={removeTag(option)}>
-      {option}
-    </Tag>}
-  );
   return (
     <>
       <Rightbar onClose={onClose} open={open} />
@@ -272,12 +422,17 @@ const Tables = () => {
       <Table
         {...tableProps}
         columns={columns}
-        expandable={
-          {
-            expandedRowRender:(record)=>
-              (<Table columns={subColumns} dataSource={record.description}/>),
-          }
-        }
+        expandable={{
+          expandedRowRender: (record) => (
+            <Table
+              {...subtableProps}
+              pagination={false}
+              columns={subColumns}
+              dataSource={record.description}
+            />
+          ),
+          rowExpandable: (record) => record.type !== "simple",
+        }}
         dataSource={hasData ? data : []}
       />
     </>
