@@ -14,34 +14,29 @@ import Navigationbar from "../navbar/Navbar";
 import TableData from "../tables/TableData";
 import TopNavbar from "../topbar/Topbar";
 import { useDispatch, useSelector } from "react-redux";
-import { changeTab } from "../../store/slices/Slice";
+import { bannerCount, changeTab } from "../../store/slices/Slice";
 import { fetch_without_payload } from "../../utils/methods/Fetch";
 import { headers } from "../../utils/api/Headers";
 
 const Dashboard = () => {
   const [selected, setSelected] = useState(0);
-  const [tabCount, setTabCount] = useState({
-    notListed: 0,
-    inactive: 0,
-    incomplete: 0,
-    active: 0,
-    error: 0,
-  });
-  const tabstatus = useSelector((state) => state.storeWork.currentTab);
+  const [notListed, setNotListed] = useState(0)
+  const [inactive, setInactive] = useState(0)
+  const [incomplete, setIncomplete] = useState(0)
+  const [active, setActive] = useState(0)
+  const bannerProductCount = useSelector((state) => state.storeWork.bannerProductCount);
   const dispatch = useDispatch();
 
   const handleTabChange = useCallback(
     (selectedTabIndex) => setSelected(selectedTabIndex),
     []
   );
-//Not Listed Count
   React.useEffect(() => {
-    const notListedPayload = {
+    const payload = {
       "filter[cif_amazon_multi_inactive][1]": "Not Listed",
       target_marketplace: "eyJtYXJrZXRwbGFjZSI6ImFsbCIsInNob3BfaWQiOm51bGx9",
     };
-
-    const notListedDataCount = (notListedPayload) => {
+    const tabsDataCount = (notListedPayload) => {
       const url = new URL(
         "https://multi-account.sellernext.com/home/public/connector/product/getStatusWiseCount"
       );
@@ -49,140 +44,36 @@ const Dashboard = () => {
         url.searchParams.append(i, notListedPayload[i]);
       }
       fetch_without_payload("POST", url, headers).then((response) => {
+        let notList = 0
         response.data.map((item, index) => {
+          
           if (item._id === "Not Listed") {
-            setTabCount({
-              ...tabCount,
-              notListed: tabCount.notListed + Number(item.total),
-            });
+            notList = notList + Number(item.total)
+            setNotListed(notList)
           }
           if (item._id === null) {
-            setTabCount({
-              ...tabCount,
-              notListed: tabCount.notListed + Number(item.total),
-            });
+            notList = notList + Number(item.total)
+            setNotListed(notList)
           }
-        });
-      });
-    };
-    notListedDataCount(notListedPayload);
-  }, []);
-//Inactive COunt
-  React.useEffect(() => {
-    const inactivePayload = {
-      "filter[items.status][1]": "Inactive",
-      target_marketplace: "eyJtYXJrZXRwbGFjZSI6ImFsbCIsInNob3BfaWQiOm51bGx9",
-    };
-    const inactiveDataCount = (inactivePayload) => {
-      const url = new URL(
-        "https://multi-account.sellernext.com/home/public/connector/product/getStatusWiseCount"
-      );
-      for (let i in inactivePayload) {
-        url.searchParams.append(i, inactivePayload[i]);
-      }
-      fetch_without_payload("POST", url, headers).then((response) => {
-        response.data.map((item, index) => {
+          if (item._id === "Not Listed: Offer") {
+            notList = notList + Number(item.total)
+            setNotListed(notList)
+          }
           if (item._id === "Inactive") {
-            setTabCount({
-              ...tabCount,
-              inactive: tabCount.inactive + Number(item.total),
-            });
+            setInactive(Number(item.total))
           }
-        });
-      });
-    };
-    inactiveDataCount(inactivePayload);
-  }, []);
-//Incomplete Count
-  React.useEffect(() => {
-    const incompletePayload = {
-      "filter[items.status][1]": "Incomplete",
-      target_marketplace: "eyJtYXJrZXRwbGFjZSI6ImFsbCIsInNob3BfaWQiOm51bGx9",
-    };
-    const incompleteDataCount = (inactivePayload) => {
-      const url = new URL(
-        "https://multi-account.sellernext.com/home/public/connector/product/getStatusWiseCount"
-      );
-      for (let i in inactivePayload) {
-        url.searchParams.append(i, inactivePayload[i]);
-      }
-      fetch_without_payload("POST", url, headers).then((response) => {
-        response.data.map((item, index) => {
           if (item._id === "Incomplete") {
-            setTabCount({
-              ...tabCount,
-              Incomplete: tabCount.Incomplete + Number(item.total),
-            });
+            setIncomplete(Number(item.total))
           }
-          if (item._id === "error") {
-            setTabCount({
-              ...tabCount,
-              error: tabCount.error + Number(item.total),
-            });
-          }
-          if (item._id === "active") {
-            setTabCount({
-              ...tabCount,
-              active: tabCount.active + Number(item.total),
-            });
+          if (item._id === "Active") {
+            setActive(Number(item.total))
           }
         });
       });
     };
-    incompleteDataCount(incompletePayload);
+    tabsDataCount(payload);
   }, []);
-//Active Count
-  React.useEffect(() => {
-    const activePayload = {
-      "filter[items.status][1]": "Active",
-      target_marketplace: "eyJtYXJrZXRwbGFjZSI6ImFsbCIsInNob3BfaWQiOm51bGx9",
-    };
-    const activeDataCount = (inactivePayload) => {
-      const url = new URL(
-        "https://multi-account.sellernext.com/home/public/connector/product/getStatusWiseCount"
-      );
-      for (let i in inactivePayload) {
-        url.searchParams.append(i, inactivePayload[i]);
-      }
-      fetch_without_payload("POST", url, headers).then((response) => {
-        response.data.map((item, index) => {
-          if (item._id === "active") {
-            setTabCount({
-              ...tabCount,
-              active: tabCount.active + Number(item.total),
-            });
-          }
-        });
-      });
-    };
-    activeDataCount(activePayload);
-  }, []);
-//Error Count
-  React.useEffect(() => {
-    const errorPayload = {
-      "filter[cif_amazon_multi_activity][1]": "error",
-      target_marketplace: "eyJtYXJrZXRwbGFjZSI6ImFsbCIsInNob3BfaWQiOm51bGx9",
-    };
-    const errorDataCount = (inactivePayload) => {
-      const url = new URL(
-        "https://multi-account.sellernext.com/home/public/connector/product/getStatusWiseCount"
-      );
-      for (let i in inactivePayload) {
-        url.searchParams.append(i, inactivePayload[i]);
-      }
-      fetch_without_payload("POST", url, headers).then((response) => {
-        response.data.map((item, index) => {
-          if (item._id === "error") {
-            setTabCount({
-              ...tabCount,
-              error: tabCount.error + Number(item.total),
-            });
-          }
-        });
-      });
-    };
-    errorDataCount(errorPayload);
-  }, []);
+
   const tabs = [
     {
       id: "All",
@@ -194,7 +85,7 @@ const Dashboard = () => {
       id: "Not Listed",
       content: (
         <span>
-          Not Listed <Badge status="new">{tabCount.notListed}</Badge>
+          Not Listed <Badge status="new">{notListed}</Badge>
         </span>
       ),
       panelID: "accepts-marketing-fitted-content-3",
@@ -203,7 +94,7 @@ const Dashboard = () => {
       id: "Inactive",
       content: (
         <span>
-          Inactive <Badge status="critical">{tabCount.inactive}</Badge>
+          Inactive <Badge status="critical">{inactive}</Badge>
         </span>
       ),
       panelID: "accepts-marketing-fitted-content-3",
@@ -212,7 +103,7 @@ const Dashboard = () => {
       id: "Incomplete",
       content: (
         <span>
-          Incomplete <Badge status="warning">{tabCount.incomplete}</Badge>
+          Incomplete <Badge status="warning">{incomplete}</Badge>
         </span>
       ),
       panelID: "accepts-marketing-fitted-content-3",
@@ -222,7 +113,7 @@ const Dashboard = () => {
       id: "Active",
       content: (
         <span>
-          Active <Badge status="success">{tabCount.active}</Badge>
+          Active <Badge status="success">{active}</Badge>
         </span>
       ),
       panelID: "accepts-marketing-fitted-content-3",
@@ -231,8 +122,8 @@ const Dashboard = () => {
       id: "Error",
       content: (
         <span>
-          Error 
-          {/* <Badge status="critical">{tabCount.error}</Badge> */}
+          Error
+          {/* <Badge status="critical">{error}</Badge> */}
         </span>
       ),
       panelID: "accepts-marketing-fitted-content-3",
@@ -243,6 +134,29 @@ const Dashboard = () => {
     dispatch(changeTab(tabs[selected].id));
   }, [selected]);
 
+  React.useEffect(() => {
+    const bannerPayloads = {
+      target_marketplace: "eyJtYXJrZXRwbGFjZSI6ImFsbCIsInNob3BfaWQiOm51bGx9",
+      target: {
+        marketplace: "amazon",
+        shopId: "476",
+      },
+      source: {
+        marketplace: "shopify",
+        shopId: "479",
+      },
+    };
+    const url = new URL(
+      "https://multi-account.sellernext.com/home/public/connector/product/getRefineProductCount"
+    );
+    for (let i in bannerPayloads) {
+      url.searchParams.append(i, bannerPayloads[i]);
+    }
+    fetch_without_payload("POST", url, headers).then((response) => {
+      console.log(response)
+      dispatch(bannerCount(response.data.count))
+    });
+  }, []);
   return (
     <div>
       <TopNavbar />
@@ -263,15 +177,14 @@ const Dashboard = () => {
               </div>
               <Card>
                 <Banner
-                  title="Some of your product variants are missing weights"
+
+                  title={`${bannerProductCount} Products are yet to be linked!`}
                   status="warning"
-                  action={{ content: "Edit variant weights", url: "" }}
-                  // secondaryAction={{ content: "Learn more", url: "" }}
+                  action={{ content: "Link Products", url: "" }}
                   onDismiss={() => {}}
                 >
                   <p>
-                    Add weights to show accurate rates at checkout and when
-                    buying shipping labels in Shopify.
+                  Link Amazon Listings with Shopify products to manage inventory and Amazon orders.
                   </p>
                 </Banner>
               </Card>

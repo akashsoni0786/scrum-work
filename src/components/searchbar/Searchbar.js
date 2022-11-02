@@ -2,8 +2,9 @@ import { Autocomplete, Icon } from "@shopify/polaris";
 import { SearchMinor } from "@shopify/polaris-icons";
 import React, { useState, useCallback, useMemo } from "react";
 import { useDispatch } from "react-redux";
-import { choices } from "../../store/slices/Slice";
+import { changeTab, choices, searchedList } from "../../store/slices/Slice";
 import { fetch_without_payload } from "../../utils/methods/Fetch";
+import { headers } from "../../utils/api/Headers";
 
 function Searchbar() {
   const dispatch = useDispatch();
@@ -16,9 +17,7 @@ function Searchbar() {
 
   React.useEffect(() => {
     dispatch(choices(selectedOptions));
-    // console.log("selectedOptions",selectedOptions)
   }, [selectedOptions]);
-
 
   const updateText = useCallback(
     (value) => {
@@ -28,68 +27,89 @@ function Searchbar() {
         setOptions(deselectedOptions);
         return;
       }
-
       const filterRegex = new RegExp(value, "i");
       const resultOptions = deselectedOptions.filter((option) =>
-        option.label.match(filterRegex)
+        option.label.match(filterRegex) || option.brand.match(filterRegex) || option.product_type.match(filterRegex) || "No Result Found"
       );
       setOptions(resultOptions);
     },
     [deselectedOptions]
   );
 
-  const updateSelection =
-  useCallback(
+  const updateSelection = useCallback(
     (selected) => {
       const selectedValue = selected.map((selectedItem) => {
         const matchedOption = options.find((option) => {
           return option.value.match(selectedItem);
         });
-        return matchedOption && matchedOption.label;
+        return matchedOption && matchedOption.label && matchedOption.brand;
       });
 
       setSelectedOptions(selected);
       setInputValue(selectedValue[0]);
-    },[options]
+    },
+    [options]
   );
 
   const textField = (
     <Autocomplete.TextField
       onChange={updateText}
-      //   label="Tags"
       value={inputValue}
       prefix={<Icon source={SearchMinor} color="base" />}
-      placeholder="Search with title..."
+      placeholder="Search with Title,Vendor and Product Type"
     />
   );
 
   React.useEffect(() => {
     const choiceList = () => {
-      const headers = {
-        "Ced-Source-Id": 500,
-        "Ced-Source-Name": "shopify",
-        "Ced-Target-Id": 530,
-        "Ced-Target-Name": "amazon",
-        appCode:
-          "eyJzaG9waWZ5IjoiYW1hem9uX3NhbGVzX2NoYW5uZWwiLCJhbWF6b24iOiJhbWF6b24ifQ== appTag: amazon_sales_channel",
-
-        authorization:
-          "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJ1c2VyX2lkIjoiNjMzMjlkN2YwNDUxYzA3NGFhMGUxNWE4Iiwicm9sZSI6ImN1c3RvbWVyIiwiZXhwIjoxNjY3MjI1NTMwLCJpc3MiOiJodHRwczpcL1wvYXBwcy5jZWRjb21tZXJjZS5jb20iLCJ0b2tlbl9pZCI6IjYzNWY5ZjdhMGI5YjIwMTVlNTQ0MjM2NyJ9.Tbaa3G1Jv8r7xAg6Y16fK2FTTso8j-NuI5IcMn9FJ8W4bd_k4uiNqJVMC__NC1OWn8ldrcmzJGwffop5rNQLRIdObWbIzr2TBxmDwtJKRSMh-4-amDO6wJQiJSe1rl6CIyZXMcZnAB3rPf9vka4JWhFfNntLgZlGfoLWYCnOsww_xygFyvxXKNrBEZic3XHBn3fnrlDahyrPwp0M3VQaE2lNJDZgSERvdkbLkL-Kkj9St7GT9nc01k8TcVGiKmy84a9MJd6VmeZqNXaamG-Fm-_ju1tvZfwO3O3Bln8BaCDvgpgqbYlLEEUBROJbccYFl46-z_GqIBVgKbdaCrl3KQ",
+      let payload = {
+        query: inputValue,
+        target_marketplace: "eyJtYXJrZXRwbGFjZSI6ImFsbCIsInNob3BfaWQiOm51bGx9",
       };
       const url = new URL(
-        "https://multi-account.sellernext.com/home/public/connector/product/getRefineProducts"
+        "https://multi-account.sellernext.com/home/public/connector/product/getSearchSuggestions"
       );
-      fetch_without_payload("GET", url, headers).then((response) => {
-        let fetchedList = [];
-        response.data.rows.map((item, index) => {
-          fetchedList.push({ value: item.title, label: item.title });
+      for (let i in payload) {
+        url.searchParams.append(i, payload[i]);
+      }
+      let fetchedList = [];
+      fetch_without_payload("POST", url, headers).then((response) => {
+        
+        response.data.map((item, index) => {
+          if(item.title.toLowerCase().includes(inputValue) || item.brand.toLowerCase().includes(inputValue) || item.product_type.toLowerCase().includes(inputValue)){
+            item.items.map((subitem, subindex) => {
+              fetchedList.push({
+                value: subitem.title,
+                label: subitem.title,
+                image: subitem.main_image,
+                containerId: item.container_id,
+                product_type:item.product_type,
+                brand : item.brand
+              });
+            });
+          }
         });
-        // console.log("fetchedList", fetchedList);
         setDeselectedOptions(fetchedList);
       });
     };
     choiceList();
-  }, []);
+  }, [inputValue]);
+
+  React.useEffect(() => {
+    if (selectedOptions !== "") {
+      deselectedOptions.map((item) => {
+        if (item.label === selectedOptions[0]) {
+          let actionPayload = {
+            query: inputValue,
+            containerId: item.containerId,
+          };
+          console.log("actionPayload", actionPayload);
+          dispatch(searchedList(actionPayload));
+          dispatch(changeTab("Search"));
+        }
+      });
+    }
+  }, [selectedOptions]);
 
   return (
     <div style={{ height: "10px" }}>

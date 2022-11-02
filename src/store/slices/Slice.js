@@ -2,10 +2,13 @@ import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
   username: "",
-  gridData :[],
-  showHeader:true,
-  filteredChoice:[],
-  currentTab : "All",
+  gridData: [],
+  showHeader: true,
+  filteredChoice: [],
+  currentTab: "All",
+  searchContent: "",
+  searchContainerId: "",
+  bannerProductCount: 0,
 };
 
 export const storeSlice = createSlice({
@@ -31,27 +34,50 @@ export const storeSlice = createSlice({
         filteredChoice: [...actions.payload],
       };
     },
-    removeChoices: (state, actions) => {
+    removeChoices: (state,actions) => {
       return {
         ...state,
-        filteredChoice: [...actions.payload,state.filteredChoice],
+        filteredChoice :  state.filteredChoice.filter((previousTag) => previousTag !== actions.payload)
       };
     },
-    hideHeaders:(state, actions) => {
+    hideHeaders: (state, actions) => {
       return {
         ...state,
-        showHeader:actions.payload,
+        showHeader: actions.payload,
       };
     },
-    changeTab:(state, actions) => {
+    changeTab: (state, actions) => {
       return {
         ...state,
-        currentTab:actions.payload,
+        currentTab: actions.payload,
       };
-    }
+    },
+    searchedList: (state, actions) => {
+      console.log(actions.payload);
+      return {
+        ...state,
+        searchContent: actions.payload.query,
+        searchContainerId: actions.payload.containerId,
+      };
+    },
+    bannerCount: (state, actions) => {
+      return {
+        ...state,
+        bannerProductCount: actions.payload,
+      };
+    },
   },
 });
 
 // Action creators are generated for each case reducer function
-export const { login, alldata, choices, removeChoices, hideHeaders, changeTab } = storeSlice.actions;
+export const {
+  login,
+  alldata,
+  choices,
+  removeChoices,
+  hideHeaders,
+  changeTab,
+  searchedList,
+  bannerCount
+} = storeSlice.actions;
 export default storeSlice.reducer; // storeReducer  in Store.js

@@ -1,18 +1,34 @@
-import { Drawer } from 'antd';
+import { Button, Drawer, Dropdown } from 'antd';
 import React from 'react';
-import {Button, Popover, ActionList} from '@shopify/polaris';
-import {ImportMinor, ExportMinor} from '@shopify/polaris-icons';
+
 import {useState, useCallback} from 'react';
 const Rightbar = (props) => {
-  const [active, setActive] = useState(true);
-
-  const toggleActive = useCallback(() => setActive((active) => !active), []);
-
-  const activator = (
-    <Button onClick={toggleActive} disclosure>
-      More actions
-    </Button>
-  );
+  const items = [
+    {
+      key: '1',
+      label: (
+        <a target="_blank" rel="noopener noreferrer" href="https://www.antgroup.com">
+          1st menu item
+        </a>
+      ),
+    },
+    {
+      key: '2',
+      label: (
+        <a target="_blank" rel="noopener noreferrer" href="https://www.aliyun.com">
+          2nd menu item
+        </a>
+      ),
+    },
+    {
+      key: '3',
+      label: (
+        <a target="_blank" rel="noopener noreferrer" href="https://www.luohanacademy.com">
+          3rd menu item
+        </a>
+      ),
+    },
+  ];
   return (
     <>
       {/* <Button type="primary" onClick={showDrawer}>
@@ -20,23 +36,20 @@ const Rightbar = (props) => {
       </Button> */}
       <Drawer title="Basic Drawer" placement="right" onClose={props.onClose} open={props.open}>
         <p>Some contents...</p>
-        
+        <Dropdown
+      menu={{
+        items,
+      }}
+      placement="bottom"
+      arrow={{
+        pointAtCenter: true,
+      }}
+    >
+      <Button>bottom</Button>
+    </Dropdown>
 
-        <div>
-      <Popover
-        active={active}
-        activator={activator}
-        autofocusTarget="first-node"
-        onClose={toggleActive}
-      >
-        <ActionList
-          actionRole="menuitem"
-          items={[
-            {content: 'Import file', icon: ImportMinor},
-            {content: 'Export file', icon: ExportMinor},
-          ]}
-        />
-      </Popover>
+    <div>
+     
     </div>
       </Drawer>
     </>

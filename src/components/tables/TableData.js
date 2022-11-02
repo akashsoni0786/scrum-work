@@ -63,6 +63,16 @@ const Tables = () => {
   const showHeader = useSelector((state) => state.storeWork.showHeader);
   const filterTage = useSelector((state) => state.storeWork.filteredChoice);
   const currentTab = useSelector((state) => state.storeWork.currentTab);
+  const searchContent = useSelector((state) => state.storeWork.searchContent);
+  const searchContainerId = useSelector(
+    (state) => state.storeWork.searchContainerId
+  );
+  const [badgeStatus, setBadgestatus] = useState({
+    Error: "critical",
+    Inactive: "critical",
+    Incomplete: "warning",
+    "Not Listed": "new",
+  });
 
   const defaultExpandable = {
     expandedRowRender: (record) => <p>{record.children}</p>,
@@ -74,16 +84,13 @@ const Tables = () => {
   const [expandable, setExpandable] = useState(defaultExpandable);
   const [rowSelection, setRowSelection] = useState({});
   const [hasData, setHasData] = useState(true);
-  
 
   const showDrawer = () => {
     setOpen(true);
   };
-
   const onClose = () => {
     setOpen(false);
   };
-
   const columns = [
     {
       title: "Image",
@@ -136,7 +143,6 @@ const Tables = () => {
       ),
     },
   ];
-
   const subColumns = [
     {
       title: "Image",
@@ -174,7 +180,6 @@ const Tables = () => {
       key: "activity",
     },
   ];
-
   const hasChildren = (items) => {
     return (
       <>
@@ -219,12 +224,14 @@ const Tables = () => {
   const fetchalldata = () => {
     setHasData(false);
     setLoading(true);
+    
     const url = new URL(
       "https://multi-account.sellernext.com/home/public/connector/product/getRefineProducts"
     );
+    
     fetch_without_payload("POST", url, headers).then((response) => {
+      console.log(response.data.rows);
       let fetchedData = [];
-      console.log(response.data.rows)
       response.data.rows.map((item, index) => {
         let row = {
           key: index,
@@ -242,27 +249,40 @@ const Tables = () => {
             product_title: subItem.title,
             source_product_id: subItem.source_product_id,
             inventory: subItem.quantity || 0,
-            amazon_status: item.error ?  <Badge status="critical">Error</Badge> : <Badge>{item.status || "Not Listed"}</Badge>,
+            amazon_status: Object.keys(subItem).includes("error") ? (
+              <Badge status="critical">Error</Badge>
+            ) : subItem.status ? (
+              <Badge status="new">{subItem.status}</Badge>
+            ) : (
+              <Badge status="new">Not Listed</Badge>
+            ),
           })),
-          product_details:item.items.length === 1 ? 
-          
-          hasChildren(item.items[0]):
-          
-          item.items.map((subItem, subIndex) => {
-            if (subItem.source_product_id === item.source_product_id) {
-              return forParent(subItem);
-            }
-          }),
+          product_details:
+            item.items.length === 1
+              ? hasChildren(item.items[0])
+              : item.items.map((subItem, subIndex) => {
+                  if (subItem.source_product_id === item.source_product_id) {
+                    return forParent(subItem);
+                  }
+                }),
           inventory: inventoryCalculate(item.items),
-          amazon_status:<Badge>{item.status || "Not Listed"}</Badge> ,
-          
-          // <Badge>Not Listed</Badge>,
+          amazon_status: Object.keys(item.items[0]).includes("error") ? (
+            <Badge status="critical">Error</Badge>
+          ) : item.items[0].status ? (
+            item.items[0].status
+          ) : item.items.length === 1 ? (
+            "Not Listed"
+          ) : (
+            ""
+          ),
+
+          // <Badge>{item.status || "Not Listed"}</Badge>,
           activity: "--",
           actions: "",
         };
         fetchedData = [...fetchedData, row];
       });
-      
+
       dispatch(alldata(fetchedData));
       setLoading(false);
       setHasData(true);
@@ -276,52 +296,57 @@ const Tables = () => {
       payloads = {
         count: 50,
         "filter[cif_amazon_multi_inactive][1]": "Not Listed",
+        "filter[container_id][1]": searchContainerId,
         productOnly: true,
         target_marketplace: "eyJtYXJrZXRwbGFjZSI6ImFsbCIsInNob3BfaWQiOm51bGx9",
       };
-    };
+    }
     if (currentTab === "Inactive") {
       payloads = {
         count: 50,
         "filter[items.status][1]": "Inactive",
+        "filter[container_id][1]": searchContainerId,
         productOnly: true,
         target_marketplace: "eyJtYXJrZXRwbGFjZSI6ImFsbCIsInNob3BfaWQiOm51bGx9",
       };
-    };
+    }
     if (currentTab === "Incomplete") {
       payloads = {
-        count: 50, 
+        count: 50,
         "filter[items.status][1]": "Incomplete",
+        "filter[container_id][1]": searchContainerId,
         productOnly: true,
         target_marketplace: "eyJtYXJrZXRwbGFjZSI6ImFsbCIsInNob3BfaWQiOm51bGx9",
       };
-    };
+    }
     if (currentTab === "Active") {
       payloads = {
-        count: 50, 
+        count: 50,
         "filter[items.status][1]": "Active",
+        "filter[container_id][1]": searchContainerId,
         productOnly: true,
         target_marketplace: "eyJtYXJrZXRwbGFjZSI6ImFsbCIsInNob3BfaWQiOm51bGx9",
       };
-    };
+    }
     if (currentTab === "Error") {
       payloads = {
-        count: 50, 
+        count: 50,
         "filter[cif_amazon_multi_activity][1]": "error",
+        "filter[container_id][1]": searchContainerId,
         productOnly: true,
         target_marketplace: "eyJtYXJrZXRwbGFjZSI6ImFsbCIsInNob3BfaWQiOm51bGx9",
       };
-    };
+    }
     const url = new URL(
       "https://multi-account.sellernext.com/home/public/connector/product/getRefineProducts"
     );
     for (let i in payloads) {
       url.searchParams.append(i, payloads[i]);
     }
-    
+
     fetch_without_payload("POST", url, headers).then((response) => {
       let fetchedData = [];
-      
+
       response.data.rows.map((item, index) => {
         let row = {
           key: index,
@@ -339,17 +364,22 @@ const Tables = () => {
             product_title: subItem.title,
             source_product_id: subItem.source_product_id,
             inventory: subItem.quantity || 0,
-            amazon_status: subItem.error ?  <Badge status="critical">Error</Badge> : <Badge>{subItem.status || "N/A"}</Badge>,
+            amazon_status: Object.keys(subItem).includes("error") ? (
+              <Badge status="critical">Error</Badge>
+            ) : subItem.status ? (
+              <Badge status="new">{subItem.status}</Badge>
+            ) : (
+              <Badge status="new">Not Listed</Badge>
+            ),
           })),
-          product_details:item.items.length === 1 ? 
-          
-          hasChildren(item.items[0]):
-          
-          item.items.map((subItem, subIndex) => {
-            if (subItem.source_product_id === item.source_product_id) {
-              return forParent(subItem);
-            }
-          }),
+          product_details:
+            item.items.length === 1
+              ? hasChildren(item.items[0])
+              : item.items.map((subItem, subIndex) => {
+                  if (subItem.source_product_id === item.source_product_id) {
+                    return forParent(subItem);
+                  }
+                }),
           inventory: inventoryCalculate(item.items),
           amazon_status: item.status || <Badge>Not Listed</Badge>,
           activity: "--",
@@ -363,13 +393,79 @@ const Tables = () => {
       setHasData(true);
     });
   };
- 
+  const searchedData = () => {
+    setHasData(false);
+    setLoading(true);
+    const searchPayload = {
+      // query: searchContent,
+      "filter[container_id][1]": searchContainerId,
+      target_marketplace: "eyJtYXJrZXRwbGFjZSI6ImFsbCIsInNob3BfaWQiOm51bGx9",
+    };
+    const url = new URL(
+      "https://multi-account.sellernext.com/home/public/connector/product/getRefineProducts"
+    );
+    for (let i in searchPayload) {
+      url.searchParams.append(i, searchPayload[i]);
+    }
+    fetch_without_payload("POST", url, headers).then((response) => {
+      console.log("Search Response : ", response);
+
+      let fetchedData = [];
+      response.data.rows.map((item, index) => {
+        let row = {
+          key: index,
+          source_product_id: item.source_product_id,
+          image: item.main_image,
+          title: item.title,
+          template: "N/A",
+          type: item.type,
+          description: item.items.map((subItem, subIndex) => ({
+            key: subIndex,
+            img:
+              subItem.main_image ||
+              "https://www.useourfacilities.com/css/images/no-image-template.png",
+            product_details: hasChildren(subItem),
+            product_title: subItem.title,
+            source_product_id: subItem.source_product_id,
+            inventory: subItem.quantity || 0,
+            amazon_status: Object.keys(subItem).includes("error") ? (
+              <Badge status="criticle">Error</Badge>
+            ) : subItem.status ? (
+              subItem.status
+            ) : (
+              "Not Listed"
+            ),
+          })),
+          product_details:
+            item.items.length === 1
+              ? hasChildren(item.items[0])
+              : item.items.map((subItem, subIndex) => {
+                  if (subItem.source_product_id === item.source_product_id) {
+                    return forParent(subItem);
+                  }
+                }),
+          inventory: inventoryCalculate(item.items),
+          amazon_status: <Badge>{item.status || "Not Listed"}</Badge>,
+
+          // <Badge>Not Listed</Badge>,
+          activity: "--",
+          actions: "",
+        };
+        fetchedData = [...fetchedData, row];
+      });
+
+      dispatch(alldata(fetchedData));
+      setLoading(false);
+      setHasData(true);
+    });
+  };
   React.useEffect(() => {
     if (currentTab === "All") fetchalldata();
-
-    else fetchRestData();
-  }, [currentTab]);
-
+    // if (searchContent !== "") {
+    //   if (currentTab === "Search") searchedData();
+    // }
+     else fetchRestData();
+  }, [currentTab, searchContent]);
   const tableProps = {
     loading,
     expandable,
@@ -381,21 +477,12 @@ const Tables = () => {
     showHeader,
     rowSelection,
   };
-
-  // const [filterTage, setFilterTage] = useState(filteredChoice)
-
-  // React.useEffect(()=>{
-  //   dispatch(hideHeaders(false))
-  // },[filterTage])
-  const removeTag = useCallback(
+  const removeTag =
     (tag) => () => {
-      // alert(tag)
-      // filterTage.filter((previousTag) => previousTag !== tag);
-      dispatch(removeChoices(""));
+      dispatch(removeChoices(tag));
       dispatch(hideHeaders(true));
-    },
-    []
-  );
+    }
+   
 
   const tagMarkup = filterTage.map((option) => {
     dispatch(hideHeaders(false));
@@ -428,7 +515,9 @@ const Tables = () => {
               {...subtableProps}
               pagination={false}
               columns={subColumns}
-              dataSource={record.description}
+              dataSource={record.description.filter(
+                (item) => item.source_product_id !== record.source_product_id
+              )}
             />
           ),
           rowExpandable: (record) => record.type !== "simple",
