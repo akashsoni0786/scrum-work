@@ -28,8 +28,12 @@ function Searchbar() {
         return;
       }
       const filterRegex = new RegExp(value, "i");
-      const resultOptions = deselectedOptions.filter((option) =>
-        option.label.match(filterRegex) || option.brand.match(filterRegex) || option.product_type.match(filterRegex) || "No Result Found"
+      const resultOptions = deselectedOptions.filter(
+        (option) =>
+          option.label.match(filterRegex) ||
+          option.brand.match(filterRegex) ||
+          option.product_type.match(filterRegex) ||
+          "No Result Found"
       );
       setOptions(resultOptions);
     },
@@ -62,6 +66,13 @@ function Searchbar() {
 
   React.useEffect(() => {
     const choiceList = () => {
+      if (inputValue === "") {
+        let actionPayload = {
+          query: "",
+          containerId: "",
+        };
+        dispatch(searchedList(actionPayload));
+      }
       let payload = {
         query: inputValue,
         target_marketplace: "eyJtYXJrZXRwbGFjZSI6ImFsbCIsInNob3BfaWQiOm51bGx9",
@@ -74,17 +85,20 @@ function Searchbar() {
       }
       let fetchedList = [];
       fetch_without_payload("POST", url, headers).then((response) => {
-        
         response.data.map((item, index) => {
-          if(item.title.toLowerCase().includes(inputValue) || item.brand.toLowerCase().includes(inputValue) || item.product_type.toLowerCase().includes(inputValue)){
+          if (
+            item.title.toLowerCase().includes(inputValue) ||
+            item.brand.toLowerCase().includes(inputValue) ||
+            item.product_type.toLowerCase().includes(inputValue)
+          ) {
             item.items.map((subitem, subindex) => {
               fetchedList.push({
                 value: subitem.title,
                 label: subitem.title,
                 image: subitem.main_image,
                 containerId: item.container_id,
-                product_type:item.product_type,
-                brand : item.brand
+                product_type: item.product_type,
+                brand: item.brand,
               });
             });
           }

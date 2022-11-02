@@ -224,11 +224,24 @@ const Tables = () => {
   const fetchalldata = () => {
     setHasData(false);
     setLoading(true);
-    
+    let payloads;
+    if (searchContainerId !== "") {
+      payloads = {
+        count: 50,
+        "filter[cif_amazon_multi_inactive][1]": "Not Listed",
+        "filter[container_id][1]": searchContainerId,
+        productOnly: true,
+        target_marketplace: "eyJtYXJrZXRwbGFjZSI6ImFsbCIsInNob3BfaWQiOm51bGx9",
+      };
+    }
     const url = new URL(
       "https://multi-account.sellernext.com/home/public/connector/product/getRefineProducts"
     );
-    
+    if (searchContainerId !== "") {
+      for (let i in payloads) {
+        url.searchParams.append(i, payloads[i]);
+      }
+    }
     fetch_without_payload("POST", url, headers).then((response) => {
       console.log(response.data.rows);
       let fetchedData = [];
@@ -296,7 +309,7 @@ const Tables = () => {
       payloads = {
         count: 50,
         "filter[cif_amazon_multi_inactive][1]": "Not Listed",
-        "filter[container_id][1]": searchContainerId,
+        // "filter[container_id][1]": searchContainerId,
         productOnly: true,
         target_marketplace: "eyJtYXJrZXRwbGFjZSI6ImFsbCIsInNob3BfaWQiOm51bGx9",
       };
@@ -305,7 +318,7 @@ const Tables = () => {
       payloads = {
         count: 50,
         "filter[items.status][1]": "Inactive",
-        "filter[container_id][1]": searchContainerId,
+        // "filter[container_id][1]": searchContainerId,
         productOnly: true,
         target_marketplace: "eyJtYXJrZXRwbGFjZSI6ImFsbCIsInNob3BfaWQiOm51bGx9",
       };
@@ -314,7 +327,7 @@ const Tables = () => {
       payloads = {
         count: 50,
         "filter[items.status][1]": "Incomplete",
-        "filter[container_id][1]": searchContainerId,
+        // "filter[container_id][1]": searchContainerId,
         productOnly: true,
         target_marketplace: "eyJtYXJrZXRwbGFjZSI6ImFsbCIsInNob3BfaWQiOm51bGx9",
       };
@@ -323,7 +336,7 @@ const Tables = () => {
       payloads = {
         count: 50,
         "filter[items.status][1]": "Active",
-        "filter[container_id][1]": searchContainerId,
+        // "filter[container_id][1]": searchContainerId,
         productOnly: true,
         target_marketplace: "eyJtYXJrZXRwbGFjZSI6ImFsbCIsInNob3BfaWQiOm51bGx9",
       };
@@ -332,14 +345,20 @@ const Tables = () => {
       payloads = {
         count: 50,
         "filter[cif_amazon_multi_activity][1]": "error",
-        "filter[container_id][1]": searchContainerId,
+        // "filter[container_id][1]": searchContainerId,
         productOnly: true,
         target_marketplace: "eyJtYXJrZXRwbGFjZSI6ImFsbCIsInNob3BfaWQiOm51bGx9",
       };
     }
-    const url = new URL(
+    let url = new URL(
       "https://multi-account.sellernext.com/home/public/connector/product/getRefineProducts"
     );
+    if (searchContainerId !== "") {
+      url.searchParams.append("filter[container_id][1]=", searchContainerId);
+
+      // url = "filter[container_id][1]=" + searchContainerId;
+    }
+
     for (let i in payloads) {
       url.searchParams.append(i, payloads[i]);
     }
@@ -464,7 +483,7 @@ const Tables = () => {
     // if (searchContent !== "") {
     //   if (currentTab === "Search") searchedData();
     // }
-     else fetchRestData();
+    else fetchRestData();
   }, [currentTab, searchContent]);
   const tableProps = {
     loading,
@@ -477,12 +496,10 @@ const Tables = () => {
     showHeader,
     rowSelection,
   };
-  const removeTag =
-    (tag) => () => {
-      dispatch(removeChoices(tag));
-      dispatch(hideHeaders(true));
-    }
-   
+  const removeTag = (tag) => () => {
+    dispatch(removeChoices(tag));
+    dispatch(hideHeaders(true));
+  };
 
   const tagMarkup = filterTage.map((option) => {
     dispatch(hideHeaders(false));
