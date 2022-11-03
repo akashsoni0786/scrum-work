@@ -99,7 +99,6 @@ const Tables = () => {
     expandedRowRender: (record) => <p>{record.children}</p>,
   };
   const dispatch = useDispatch();
-  const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [expandable, setExpandable] = useState(defaultExpandable);
   const [rowSelection, setRowSelection] = useState({});
@@ -171,7 +170,6 @@ const Tables = () => {
       ),
     },
   ];
-
   const subColumns = [
     {
       title: "Image",
@@ -250,6 +248,25 @@ const Tables = () => {
       `${item.length === 1 ? "" : item.length + " variants"}`
     );
   };
+  const colorStatus=(status)=>{
+    console.log("Status",status)
+    if(status === "Inactive"){
+      return "success"
+    }
+    if(status === "Incomplete"){
+      return "warnng"
+    }
+    if(status === "Not Listed"){
+      return "surface"
+    }
+    if(status === "Active"){
+      return "interactive"
+    }
+    if(status === "Error"){
+      
+      return "critical"
+    }
+  }
   const fetchalldata = () => {
     setHasData(false);
     setLoading(true);
@@ -272,7 +289,6 @@ const Tables = () => {
       }
     }
     fetch_without_payload("POST", url, headers).then((response) => {
-      console.log(response.data.rows);
       let fetchedData = [];
       response.data.rows.map((item, index) => {
         let row = {
@@ -296,7 +312,7 @@ const Tables = () => {
             ) : subItem.status ? (
               <Badge status="new">{subItem.status}</Badge>
             ) : (
-              <Badge status="new">Not Listed</Badge>
+              <Badge status="surface">Not Listed</Badge>
             ),
           })),
           product_details:
@@ -311,14 +327,12 @@ const Tables = () => {
           amazon_status: Object.keys(item.items[0]).includes("error") ? (
             <Badge status="critical">Error</Badge>
           ) : item.items[0].status ? (
-            item.items[0].status
+            <Badge status="surface">{item.items[0].status}</Badge>
           ) : item.items.length === 1 ? (
-            "Not Listed"
+            <Badge status="surface">Not Listed</Badge>
           ) : (
             ""
           ),
-
-          // <Badge>{item.status || "Not Listed"}</Badge>,
           activity: "--",
           actions: "",
         };

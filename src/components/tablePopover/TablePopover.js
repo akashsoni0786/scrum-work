@@ -6,7 +6,7 @@ import {
   Modal,
   TextContainer,
   Spinner,
-  Toast
+  Toast,
 } from "@shopify/polaris";
 import { useState, useCallback } from "react";
 import { MobileVerticalDotsMajor } from "@shopify/polaris-icons";
@@ -37,8 +37,8 @@ function ActionListInPopover() {
   );
 
   const amazonLookupStartAction = () => {
-    setActiveModal(false);
-    setloadLookup(true)
+    setActiveModal(true);
+    setloadLookup(true);
     const payload = {
       target_marketplace: "eyJtYXJrZXRwbGFjZSI6ImFsbCIsInNob3BfaWQiOm51bGx9",
       target: {
@@ -56,21 +56,24 @@ function ActionListInPopover() {
     const url = new URL(
       "https://multi-account.sellernext.com/home/public/connector/product/searchProduct"
     );
-   
+
     fetch_with_payload("POST", url, postHeaders, payload).then((response) => {
-      console.log(response);
       setLookupMessage(response.message);
-      setloadLookup(false)
-      setActiveToastResponse(true)
+      setloadLookup(false);
+      setActiveToastResponse(true);
+      setActiveModal(false);
     });
   };
 
   const [activeToastResponse, setActiveToastResponse] = useState(false);
 
-  const toggleActiveToast = useCallback(() => setActiveToastResponse((activeToastResponse) => !activeToastResponse), []);
+  const toggleActiveToast = useCallback(
+    () => setActiveToastResponse((activeToastResponse) => !activeToastResponse),
+    []
+  );
 
-  const toastMarkupResponse = active ? (
-    <Toast content="Message sent" onDismiss={toggleActive} />
+  const toastMarkupResponse = activeToastResponse ? (
+    <Toast content={lookupMessage} onDismiss={toggleActiveToast} />
   ) : null;
 
   return (
@@ -95,13 +98,17 @@ function ActionListInPopover() {
           ]}
         />
       </Popover>
-          {toastMarkupResponse}
+      {toastMarkupResponse}
       <Modal
         open={activeModal}
         onClose={amazonLookupAction}
         title="Amazon Lookup"
         primaryAction={{
-          content:loadLookup? <Spinner accessibilityLabel="Small spinner example" size="small" />: "Start",
+          content: loadLookup ? (
+            <Spinner accessibilityLabel="Small spinner example" size="small" />
+          ) : (
+            "Start"
+          ),
           onAction: amazonLookupStartAction,
         }}
       >
