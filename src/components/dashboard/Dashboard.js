@@ -147,14 +147,14 @@ const Dashboard = () => {
       },
     };
     const url = new URL(
-      "https://multi-account.sellernext.com/home/public/connector/product/getRefineProductCount"
+      "https://multi-account.sellernext.com/home/public/connector/product/getMatchStatusCount"
     );
     for (let i in bannerPayloads) {
       url.searchParams.append(i, bannerPayloads[i]);
     }
     fetch_without_payload("POST", url, headers).then((response) => {
       console.log(response)
-      dispatch(bannerCount(response.data.count))
+      dispatch(bannerCount(response.data.not_linked))
     });
   }, []);
   return (
@@ -175,7 +175,7 @@ const Dashboard = () => {
                   shipping labels in Shopify.
                 </p>
               </div>
-              <Card>
+              {bannerProductCount !== 0 && <Card>
                 <Banner
 
                   title={`${bannerProductCount} Products are yet to be linked!`}
@@ -187,7 +187,7 @@ const Dashboard = () => {
                   Link Amazon Listings with Shopify products to manage inventory and Amazon orders.
                   </p>
                 </Banner>
-              </Card>
+              </Card>}
               <Card>
                 <Tabs
                   tabs={tabs}

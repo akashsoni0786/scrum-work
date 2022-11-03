@@ -1,20 +1,42 @@
 import "antd/dist/antd.css";
 import { DownOutlined } from "@ant-design/icons";
-import { Button, Form, Radio, Space, Switch, Table } from "antd";
+import { Button, Form, Image, Radio, Space, Switch, Table } from "antd";
 import React, { useCallback, useState } from "react";
 import Rightbar from "../rightbar/Rightbar";
-import { Badge, Icon, Stack, Tag } from "@shopify/polaris";
+import {
+  Badge,
+  Icon,
+  Stack,
+  Tag,
+  Modal,
+  TextContainer,
+  Toast,
+  Popover,
+  ActionList,
+  DropZone,
+  Thumbnail,
+  Caption,
+  Text,
+  RadioButton,
+  Checkbox,
+  Banner,
+  Spinner,
+} from "@shopify/polaris";
 import Searchbar from "../searchbar/Searchbar.js";
 import CssFile from "./TableData.module.css";
-import { fetch_without_payload } from "../../utils/methods/Fetch.js";
-import { MobileVerticalDotsMajor } from "@shopify/polaris-icons";
+import {
+  fetch_without_payload,
+  fetch_with_payload,
+} from "../../utils/methods/Fetch.js";
+import { MobileVerticalDotsMajor, NoteMinor } from "@shopify/polaris-icons";
 import { useDispatch, useSelector } from "react-redux";
 import {
   alldata,
   hideHeaders,
   removeChoices,
 } from "../../store/slices/Slice.js";
-import { headers } from "../../utils/api/Headers";
+import { headers, postHeaders } from "../../utils/api/Headers";
+import ActionListInPopover from "../tablePopover/TablePopover";
 const ftghfg = [
   {
     title: "Name",
@@ -73,31 +95,38 @@ const Tables = () => {
     Incomplete: "warning",
     "Not Listed": "new",
   });
-
   const defaultExpandable = {
     expandedRowRender: (record) => <p>{record.children}</p>,
   };
   const dispatch = useDispatch();
   const [open, setOpen] = useState(false);
-
   const [loading, setLoading] = useState(true);
   const [expandable, setExpandable] = useState(defaultExpandable);
   const [rowSelection, setRowSelection] = useState({});
   const [hasData, setHasData] = useState(true);
+  const [active, setActive] = useState(false);
+  const [activeSync, setActiveSync] = useState(false);
+  const [amazonLookupResponse, setAmazonLookupResponse] = useState("");
+  const [amazonLookupToast, setAmazonLookupToast] = useState(false);
+  const [amazonSyncResponse, setAmazonSyncResponse] = useState("");
+  const [amazonSyncToast, setAmazonSyncToast] = useState(false);
+  const [activeBulkUpdate, setActiveBulkUpdate] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(true);
+  const [loadLookup, setLoadLookup] = useState(false);
+  const [loadSync, setLoadSync] = useState(false);
 
-  const showDrawer = () => {
-    setOpen(true);
-  };
-  const onClose = () => {
-    setOpen(false);
-  };
   const columns = [
     {
       title: "Image",
       dataIndex: "image",
       key: "image",
       render: (img_url) => (
-        <img className={CssFile.product_image} alt="" src={img_url} />
+        <Image
+          width={100}
+          height={100}
+          src={img_url}
+          placeholder={<Image preview={false} src={img_url} width={700} />}
+        />
       ),
     },
     {
@@ -137,12 +166,12 @@ const Tables = () => {
       dataIndex: "actions",
       key: "actions",
       render: () => (
-        <Button>
-          <Icon source={MobileVerticalDotsMajor} color="base" />
-        </Button>
+        <ActionListInPopover/>
+       
       ),
     },
   ];
+
   const subColumns = [
     {
       title: "Image",
@@ -355,8 +384,6 @@ const Tables = () => {
     );
     if (searchContainerId !== "") {
       url.searchParams.append("filter[container_id][1]=", searchContainerId);
-
-      // url = "filter[container_id][1]=" + searchContainerId;
     }
 
     for (let i in payloads) {
@@ -412,72 +439,6 @@ const Tables = () => {
       setHasData(true);
     });
   };
-  const searchedData = () => {
-    setHasData(false);
-    setLoading(true);
-    const searchPayload = {
-      // query: searchContent,
-      "filter[container_id][1]": searchContainerId,
-      target_marketplace: "eyJtYXJrZXRwbGFjZSI6ImFsbCIsInNob3BfaWQiOm51bGx9",
-    };
-    const url = new URL(
-      "https://multi-account.sellernext.com/home/public/connector/product/getRefineProducts"
-    );
-    for (let i in searchPayload) {
-      url.searchParams.append(i, searchPayload[i]);
-    }
-    fetch_without_payload("POST", url, headers).then((response) => {
-      console.log("Search Response : ", response);
-
-      let fetchedData = [];
-      response.data.rows.map((item, index) => {
-        let row = {
-          key: index,
-          source_product_id: item.source_product_id,
-          image: item.main_image,
-          title: item.title,
-          template: "N/A",
-          type: item.type,
-          description: item.items.map((subItem, subIndex) => ({
-            key: subIndex,
-            img:
-              subItem.main_image ||
-              "https://www.useourfacilities.com/css/images/no-image-template.png",
-            product_details: hasChildren(subItem),
-            product_title: subItem.title,
-            source_product_id: subItem.source_product_id,
-            inventory: subItem.quantity || 0,
-            amazon_status: Object.keys(subItem).includes("error") ? (
-              <Badge status="criticle">Error</Badge>
-            ) : subItem.status ? (
-              subItem.status
-            ) : (
-              "Not Listed"
-            ),
-          })),
-          product_details:
-            item.items.length === 1
-              ? hasChildren(item.items[0])
-              : item.items.map((subItem, subIndex) => {
-                  if (subItem.source_product_id === item.source_product_id) {
-                    return forParent(subItem);
-                  }
-                }),
-          inventory: inventoryCalculate(item.items),
-          amazon_status: <Badge>{item.status || "Not Listed"}</Badge>,
-
-          // <Badge>Not Listed</Badge>,
-          activity: "--",
-          actions: "",
-        };
-        fetchedData = [...fetchedData, row];
-      });
-
-      dispatch(alldata(fetchedData));
-      setLoading(false);
-      setHasData(true);
-    });
-  };
   React.useEffect(() => {
     if (currentTab === "All") fetchalldata();
     // if (searchContent !== "") {
@@ -500,7 +461,6 @@ const Tables = () => {
     dispatch(removeChoices(tag));
     dispatch(hideHeaders(true));
   };
-
   const tagMarkup = filterTage.map((option) => {
     dispatch(hideHeaders(false));
     return (
@@ -509,17 +469,201 @@ const Tables = () => {
       </Tag>
     );
   });
+  const amazonLookup = () => {
+    setActive(true);
+  };
+  const amazonLookupProceed = () => {
+    setActive(false);
+    setLoadLookup(true);
+    let payload = {
+      target_marketplace: "eyJtYXJrZXRwbGFjZSI6ImFsbCIsInNob3BfaWQiOm51bGx9",
+      target: {
+        marketplace: "amazon",
+        shopId: "479",
+      },
+      source: {
+        marketplace: "shopify",
+        shopId: "476",
+      },
+    };
+    const url = new URL(
+      "https://multi-account.sellernext.com/home/public/connector/product/searchProduct"
+    );
+    fetch_with_payload("POST", url, postHeaders, payload).then((response) => {
+      setAmazonLookupResponse(response.message);
+      setAmazonLookupToast(true);
+      setLoadLookup(false);
+    });
+  };
+  const amazonLookupClose = useCallback(() => setActive(!active), [active]);
+  const toggleAmazonLookupToast = useCallback(
+    () => setAmazonLookupToast((amazonLookupToast) => !amazonLookupToast),
+    []
+  );
+  const toastMarkupAmazonLookup = amazonLookupToast ? (
+    <Toast content={amazonLookupResponse} onDismiss={toggleAmazonLookupToast} />
+  ) : null;
+  const amazonSyncFunc = () => {
+    setActiveSync(true);
+  };
+  const amazonSyncProceed = () => {
+    setActiveSync(false);
+    setLoadSync(true);
+    let payload = {
+      target_marketplace: "eyJtYXJrZXRwbGFjZSI6ImFsbCIsInNob3BfaWQiOm51bGx9",
+      target: {
+        marketplace: "amazon",
+        shopId: "479",
+      },
+      source: {
+        marketplace: "shopify",
+        shopId: "476",
+      },
+      data: {
+        matchWith: "sku",
+      },
+    };
+    const url = new URL(
+      "https://multi-account.sellernext.com/home/public/connector/product/matchProduct"
+    );
+    for (let i in payload) {
+      url.searchParams.append(i, payload[i]);
+    }
+    fetch_with_payload("POST", url, postHeaders, payload).then((response) => {
+      console.log(response);
+      setAmazonSyncResponse(response.message);
+      setAmazonSyncToast(true);
+      setLoadSync(false);
+    });
+  };
+  const amazonSyncClose = useCallback(
+    () => setActiveSync(!activeSync),
+    [activeSync]
+  );
+  const toggleAmazonSyncToast = useCallback(
+    () => setAmazonSyncToast((amazonSyncToast) => !amazonSyncToast),
+    []
+  );
+  const toastMarkupAmazonSync = amazonSyncToast ? (
+    <Toast content={amazonSyncResponse} onDismiss={toggleAmazonSyncToast} />
+  ) : null;
+  const toggleBulkUpdate = useCallback(
+    () => setActiveBulkUpdate((activeBulkUpdate) => !activeBulkUpdate),
+    []
+  );
+  const activatorbulkupdate = (
+    <Button onClick={toggleBulkUpdate} disclosure>
+      Bulk Update
+    </Button>
+  );
+  const [activeImportedAction, setActiveImportedAction] = useState(false);
+  const handleImportedAction = useCallback(() => {
+    setActiveImportedAction(true);
+  }, []);
+  const ImportedActionProceed = () => {
+    setActiveImportedAction(false);
+  };
+  const ImportedActionClose = useCallback(
+    () => setActiveImportedAction(!activeImportedAction),
+    [activeImportedAction]
+  );
+  const [files, setFiles] = useState([]);
+  const handleDropZoneDrop = useCallback(
+    (_dropFiles, acceptedFiles, _rejectedFiles) => {
+      setFiles((files) => [...files, ...acceptedFiles]);
+      if (files.length === 0) {
+        setSelectedImage(false);
+      } else {
+        setSelectedImage(true);
+      }
+    },
+    []
+  );
+  const validImageTypes = ["image/jpeg", "image/png"];
+  const fileUpload = !files.length && (
+    <DropZone.FileUpload actionHint="Accepts  .jpg, and .png" />
+  );
+  const uploadedFiles = files.length > 0 && (
+    <Stack vertical>
+      {files.map((file, index) => (
+        <Stack alignment="center" key={index}>
+          <Thumbnail
+            size="small"
+            alt={file.name}
+            source={
+              validImageTypes.includes(file.type)
+                ? window.URL.createObjectURL(file)
+                : NoteMinor
+            }
+          />
+          <div>
+            {file.name} <Caption>{file.size} bytes</Caption>
+          </div>
+        </Stack>
+      ))}
+    </Stack>
+  );
+  const [activeExportedAction, setActiveExportedAction] = useState(false);
 
+  const handleExportedAction = useCallback(() => {
+    setActiveExportedAction(true);
+  }, []);
+
+  const ExportedActionProceed = () => {
+    setActiveExportedAction(false);
+  };
+  const ExportedActionClose = useCallback(
+    () => setActiveExportedAction(!activeExportedAction),
+    [activeExportedAction]
+  );
+  const [checked, setChecked] = useState(false);
+  const handleChange = useCallback((newChecked) => setChecked(newChecked), []);
   return (
     <>
-      <Rightbar onClose={onClose} open={open} />
       <div style={{ margin: "10px 5px" }}>
         <Stack wrap={false}>
           <Searchbar />
-          <Button onClick={showDrawer}>More Filters</Button>
-          <Button>Sync Status</Button>
-          <Button>Amazon Lookup</Button>
-          <Button>Bulk Update</Button>
+          <Rightbar />
+          <Button onClick={amazonSyncFunc}>
+            {loadSync ? (
+              <Spinner
+                accessibilityLabel="Small spinner example"
+                size="small"
+              />
+            ) : (
+              "Sync Status"
+            )}
+          </Button>
+          <Button onClick={amazonLookup}>
+            {loadLookup ? (
+              <Spinner
+                accessibilityLabel="Small spinner example"
+                size="small"
+              />
+            ) : (
+              "Amazon Lookup"
+            )}
+          </Button>
+          <Popover
+            active={activeBulkUpdate}
+            activator={activatorbulkupdate}
+            autofocusTarget="first-node"
+            onClose={toggleBulkUpdate}
+          >
+            <ActionList
+              actionRole="menuitem"
+              items={[
+                {
+                  content: "Import file",
+                  onAction: handleImportedAction,
+                },
+                {
+                  content: "Export file",
+                  onAction: handleExportedAction,
+                },
+              ]}
+            />
+          </Popover>
         </Stack>
       </div>
       <Stack spacing="tight">{tagMarkup}</Stack>
@@ -541,6 +685,224 @@ const Tables = () => {
         }}
         dataSource={hasData ? data : []}
       />
+      {toastMarkupAmazonLookup}
+      {toastMarkupAmazonSync}
+      <div>
+        <Modal
+          open={active}
+          onClose={amazonLookupClose}
+          title="Amazon Lookup"
+          primaryAction={{
+            content: "Proceed",
+            onAction: amazonLookupProceed,
+          }}
+        >
+          <Modal.Section>
+            <TextContainer>
+              <p>
+                You can choose to run Amazon Lookup for any number of products
+                you want. This will update the status of those products that are
+                currently under “Not Listed: Offer” status
+              </p>
+            </TextContainer>
+          </Modal.Section>
+        </Modal>
+
+        <Modal
+          open={activeSync}
+          onClose={amazonSyncClose}
+          title="Sync Status"
+          primaryAction={{
+            content: "Proceed",
+            onAction: amazonSyncProceed,
+          }}
+        >
+          <Modal.Section>
+            <TextContainer>
+              <p>
+                It will search sku(s) in your Amazon’s seller panel. For all the
+                products with matching sku(s), status of main products will
+                shown under Amazon Status and variant’s status will reflect on
+                Edit Product page.
+                <br />
+                <br />
+                Do you want to proceed with matching all the product(s) from
+                Amazon to that on app ?
+              </p>
+            </TextContainer>
+          </Modal.Section>
+        </Modal>
+
+        <Modal
+          open={activeImportedAction}
+          onClose={ImportedActionClose}
+          title="Import Products"
+          primaryAction={{
+            content: "Proceed",
+            onAction: ImportedActionProceed,
+            disabled: selectedImage,
+          }}
+          secondaryActions={[
+            {
+              content: "Close",
+              onAction: ImportedActionProceed,
+            },
+          ]}
+        >
+          <Modal.Section>
+            <TextContainer>
+              <p>
+                <b>Import Updated Product CSV</b>
+                <br />
+                <br />
+                To ensure seamless Product update, first export the Product
+                information in the form of a CSV file, make the necessary
+                updates to this CSV file and then import this very same updated
+                CSV file. All changes will be reflected on the App as well as on
+                your Shopify store too.
+              </p>
+              <DropZone onDrop={handleDropZoneDrop}>
+                {uploadedFiles}
+                {fileUpload}
+              </DropZone>
+              <u>
+                <a href="https://docs.cedcommerce.com/shopify/amazon-channel-cedcommerce/?section=csv-bulk-action">
+                  Need help importing Products?
+                </a>
+              </u>
+            </TextContainer>
+          </Modal.Section>
+        </Modal>
+
+        <Modal
+          open={activeExportedAction}
+          onClose={ExportedActionClose}
+          title="Export Products"
+          primaryAction={{
+            content: "Proceed",
+            onAction: ExportedActionProceed,
+          }}
+          secondaryActions={[
+            {
+              content: "Close",
+              onAction: ExportedActionProceed,
+            },
+          ]}
+        >
+          <Modal.Section>
+            <TextContainer>
+              <p>
+                <b>Export Product Information </b>
+                <br />
+
+                <Text variant="bodyMd" as="p" color="subdued">
+                  Get details of selected/all Products in the form of a CSV
+                  document and make the necessary changes to that information.
+                </Text>
+                <br />
+                <div className={CssFile.rowsetup}>
+                  <RadioButton
+                    label="Current Page"
+                    // helpText="Customers will only be able to check out as guests."
+                    // checked={value === 'disabled'}
+                    id="disabled"
+                    name="accounts"
+                    // onChange={handleChange}
+                  />
+                  <RadioButton label="All" id="disabled" name="accounts" />
+
+                  <RadioButton
+                    disabled={true}
+                    label="
+Selected Products: 0 Product"
+                    id="disabled"
+                    name="accounts"
+                  />
+
+                  <RadioButton
+                    disabled={false}
+                    label="
+                    Found 50+ matching products corresponding to your search"
+                    id="disabled"
+                    name="accounts"
+                  />
+                </div>
+                <br />
+                <Banner
+                  // title="Before you can purchase a shipping label, this change needs to be made:"
+                  // action={{ content: "Edit address" }}
+                  status="warning"
+                >
+                  <p>
+                    To ensure seamless Product update, export the Product
+                    information in the form of a CSV file, make the necessary
+                    updates to this CSV file and then import this very same
+                    updated CSV file.
+                  </p>
+                </Banner>
+                <br />
+                <b>
+                  Please select the columns to be exported based on the applied
+                  filters
+                </b>
+                <br />
+
+                <div className={CssFile.columnsetup}>
+                  <Checkbox
+                    label="All"
+                    checked={checked}
+                    onChange={handleChange}
+                  />
+
+                  <Checkbox
+                    label="Title"
+                    checked={checked}
+                    onChange={handleChange}
+                  />
+
+                  <Checkbox
+                    label="Quantity"
+                    checked={checked}
+                    onChange={handleChange}
+                  />
+
+                  <Checkbox
+                    label="Price"
+                    checked={checked}
+                    onChange={handleChange}
+                  />
+
+                  <Checkbox
+                    label="Barcode"
+                    checked={checked}
+                    onChange={handleChange}
+                  />
+                  <Checkbox
+                    label="SKU"
+                    checked={checked}
+                    onChange={handleChange}
+                  />
+                </div>
+                <p>
+                  Learn more about{" "}
+                  <u>
+                    <a href="https://docs.cedcommerce.com/shopify/amazon-channel-cedcommerce/?section=csv-bulk-action">
+                      exporting Products to CSV file
+                    </a>
+                  </u>{" "}
+                  or the{" "}
+                  <u>
+                    <a href="https://docs.cedcommerce.com/shopify/amazon-channel-cedcommerce/?section=csv-bulk-action">
+                      bulk editor
+                    </a>
+                  </u>
+                  .
+                </p>
+              </p>
+            </TextContainer>
+          </Modal.Section>
+        </Modal>
+      </div>
     </>
   );
 };

@@ -1,24 +1,22 @@
-import { Autocomplete, Icon } from "@shopify/polaris";
+import { Autocomplete, Icon, Spinner } from "@shopify/polaris";
 import { SearchMinor } from "@shopify/polaris-icons";
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useRef } from "react";
 import { useDispatch } from "react-redux";
 import { changeTab, choices, searchedList } from "../../store/slices/Slice";
 import { fetch_without_payload } from "../../utils/methods/Fetch";
 import { headers } from "../../utils/api/Headers";
-
+import CssFile from "./Searchbar.module.css";
 function Searchbar() {
   const dispatch = useDispatch();
-  const [deselectedOptions, setDeselectedOptions] = useState([
-    // { value: "Loading...", label: "Loading..." },
-  ]);
+  const [deselectedOptions, setDeselectedOptions] = useState([]);
+  const ref = useRef();
   const [selectedOptions, setSelectedOptions] = useState([]);
   const [inputValue, setInputValue] = useState("");
-  const [options, setOptions] = useState(deselectedOptions);
 
+  const [options, setOptions] = useState([]);
   React.useEffect(() => {
     dispatch(choices(selectedOptions));
   }, [selectedOptions]);
-
   const updateText = useCallback(
     (value) => {
       setInputValue(value);
@@ -29,24 +27,25 @@ function Searchbar() {
       }
       const filterRegex = new RegExp(value, "i");
       const resultOptions = deselectedOptions.filter(
-        (option) =>
-          option.label.match(filterRegex) ||
-          option.brand.match(filterRegex) ||
-          option.product_type.match(filterRegex) ||
-          "No Result Found"
+        (option) => option.label.match(filterRegex)
+        //  ||
+        // option.brand.match(filterRegex) ||
+        // option.product_type.match(filterRegex) ||
+        // "No Result Found"
       );
       setOptions(resultOptions);
     },
     [deselectedOptions]
   );
-
   const updateSelection = useCallback(
     (selected) => {
       const selectedValue = selected.map((selectedItem) => {
         const matchedOption = options.find((option) => {
           return option.value.match(selectedItem);
         });
-        return matchedOption && matchedOption.label && matchedOption.brand;
+        return matchedOption && matchedOption.value;
+        // && matchedOption.brand
+        // && matchedOption.brand;
       });
 
       setSelectedOptions(selected);
@@ -54,7 +53,6 @@ function Searchbar() {
     },
     [options]
   );
-
   const textField = (
     <Autocomplete.TextField
       onChange={updateText}
@@ -63,7 +61,6 @@ function Searchbar() {
       placeholder="Search with Title,Vendor and Product Type"
     />
   );
-
   React.useEffect(() => {
     const choiceList = () => {
       if (inputValue === "") {
@@ -72,52 +69,62 @@ function Searchbar() {
           containerId: "",
         };
         dispatch(searchedList(actionPayload));
-      }
-      let payload = {
-        query: inputValue,
-        target_marketplace: "eyJtYXJrZXRwbGFjZSI6ImFsbCIsInNob3BfaWQiOm51bGx9",
-      };
-      const url = new URL(
-        "https://multi-account.sellernext.com/home/public/connector/product/getSearchSuggestions"
-      );
-      for (let i in payload) {
-        url.searchParams.append(i, payload[i]);
-      }
-      let fetchedList = [];
-      fetch_without_payload("POST", url, headers).then((response) => {
-        response.data.map((item, index) => {
-          if (
-            item.title.toLowerCase().includes(inputValue) ||
-            item.brand.toLowerCase().includes(inputValue) ||
-            item.product_type.toLowerCase().includes(inputValue)
-          ) {
-            item.items.map((subitem, subindex) => {
-              fetchedList.push({
-                value: subitem.title,
-                label: subitem.title,
-                image: subitem.main_image,
-                containerId: item.container_id,
-                product_type: item.product_type,
-                brand: item.brand,
-              });
-            });
+      } else {
+        clearTimeout(ref.current);
+        ref.current = setTimeout(() => {
+          let payload = {
+            query: inputValue,
+            target_marketplace:
+              "eyJtYXJrZXRwbGFjZSI6ImFsbCIsInNob3BfaWQiOm51bGx9",
+          };
+          const url = new URL(
+            "https://multi-account.sellernext.com/home/public/connector/product/getSearchSuggestions"
+          );
+          for (let i in payload) {
+            url.searchParams.append(i, payload[i]);
           }
-        });
-        setDeselectedOptions(fetchedList);
-      });
+          let fetchedList = [];
+          fetch_without_payload("POST", url, headers).then((response) => {
+            response.data.map((item, index) => {
+              if (
+                item.title.toLowerCase().includes(inputValue) ||
+                item.brand.toLowerCase().includes(inputValue) ||
+                item.product_type.toLowerCase().includes(inputValue)
+              ) {
+                item.items.map((subitem, subindex) => {
+                  fetchedList.push({
+                    containerId: item.container_id,
+                    value: subitem.title,
+                    label: (
+                      <div className={CssFile.labelDiv}>
+                        <img src={subitem.main_image} alt="" />
+                        <div className={CssFile.details}>
+                          <h1>{subitem.title}</h1>
+                          <p>{item.brand}</p>
+                        </div>
+                      </div>
+                    ),
+                  });
+                });
+              }
+            });
+            setOptions(fetchedList);
+          });
+        }, 2000);
+      }
     };
+
     choiceList();
   }, [inputValue]);
 
   React.useEffect(() => {
     if (selectedOptions !== "") {
-      deselectedOptions.map((item) => {
-        if (item.label === selectedOptions[0]) {
+      options.map((item) => {
+        if (item.value === selectedOptions[0]) {
           let actionPayload = {
             query: inputValue,
             containerId: item.containerId,
           };
-          console.log("actionPayload", actionPayload);
           dispatch(searchedList(actionPayload));
           dispatch(changeTab("Search"));
         }

@@ -20,3 +20,11 @@ export const fetch_without_payload = async (methods,url, header) => {
     headers: header
   }).then((response) => response.json());
 };
+
+export const fetch_with_payload = async (methods,url, header,payload) => {
+  return fetch(url, {
+    method: methods,
+    headers: header,
+    body:JSON.stringify(payload)
+  }).then((response) => response.json());
+};

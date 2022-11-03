@@ -2,3 +2,13 @@
     width: 70px;
     height: 70px;
 }
+.rowsetup{
+    display: flex;
+    flex-direction: column;
+}
+.columnsetup{
+    display: flex;
+}
+.columnsetup >*{
+    margin: 5px 15px
+}
