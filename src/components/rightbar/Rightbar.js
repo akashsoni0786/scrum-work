@@ -1,15 +1,14 @@
 import { TextField, Card, Filters, Select } from "@shopify/polaris";
-import { useState, useCallback } from "react";
+import React, { useState, useCallback, useRef } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { storedFilter } from "../../store/slices/Slice";
 
 export function Rightbar() {
   const [selected, setSelected] = useState(Array(8).fill(""));
   const [queryValue, setQueryValue] = useState(null);
-
-  const handleTaggedWithChange = useCallback((value, index) => {
-    let tempSelected = [...selected];
-    tempSelected[index] = value;
-    setSelected(tempSelected);
-  }, []);
+  const dispatch = useDispatch();
+  const ref = useRef();
+  // const resultFltrInventory = useSelector((state)=> state.storeWork.inventoryFilter)
 
   const handleFiltersQueryChange = useCallback(
     (value) => setQueryValue(value),
@@ -21,18 +20,94 @@ export function Rightbar() {
     handleTaggedWithRemove();
     handleQueryValueRemove();
   }, [handleQueryValueRemove, handleTaggedWithRemove]);
+
+  const handleTaggedWithChange = useCallback((value, index) => {
+    let tempSelected = [...selected];
+    tempSelected[index] = value;
+    setSelected(tempSelected);
+  }, []);
+
+  const [selectedInventory, setSelectedInventory] = useState(0);
+  const [valueInventory, setValueInventory] = useState("");
+
+  const [selectedSKU, setSelectedSKU] = useState(0);
+  const [valueSKU, setValueSKU] = useState("");
+
+  const handleInventoryNumber = useCallback((value, index) => {
+    setValueInventory(value);
+  }, []);
+
+  const handleSelectInventory = useCallback(
+    (value) => setSelectedInventory(value),
+    []
+  );
+  const handleSelectSku = useCallback(
+    (value) => setSelectedSKU(value),
+    []
+  );
+
+  const handleSKUNumber = useCallback((value, index) => {
+    setValueSKU(value);
+  }, []);
+  
+  const inventoryOptions = [
+    { label: "Equals", value: "1" },
+    { label: "Not Equals", value: "2" },
+    { label: "Greater than or Equal to", value: "3" },
+    { label: "Less than or Equal to", value: "4" },
+  ];
+
+  const skuOptions = [
+    { label: "Equals", value: "1" },
+    { label: "Not Equals", value: "2" },
+    { label: "Contains", value: "3" },
+    { label: "Does not contains", value: "4" },
+    { label: "Starts with", value: "5" },
+    { label: "Ends with", value: "6" },
+  ];
+
+  React.useEffect(() => {
+    clearTimeout(ref.current);
+
+    ref.current = setTimeout(() => {
+
+      let filterInventoryObj = {
+        inventory: { value: valueInventory, option: selectedInventory },
+      };
+
+      dispatch(storedFilter(filterInventoryObj));
+    }, 1000);
+  }, [valueInventory, selectedInventory]);
+
+  React.useEffect(() => {
+    clearTimeout(ref.current);
+    ref.current = setTimeout(() => {
+
+      let filterObj = {
+        sku: { value: valueSKU, option: selectedSKU },
+      };
+
+      dispatch(storedFilter(filterObj));
+    }, 1000);
+  }, [valueSKU, selectedSKU]);
+
   const filters = [
     {
       key: "inventory",
       label: "Inventory",
       filter: (
         <>
-          <Select placeholder="Equals"></Select>
+          <Select
+            label="Date range"
+            options={inventoryOptions}
+            onChange={handleSelectInventory}
+            value={selected}
+          />
           <br />
           <TextField
             label="Tagged with"
-            value={selected[0]}
-            onChange={(e) => handleTaggedWithChange(e, 0)}
+            value={valueInventory}
+            onChange={(e) => handleInventoryNumber(e, 0)}
             autoComplete="off"
             labelHidden
             type="number"
@@ -46,12 +121,16 @@ export function Rightbar() {
       label: "SKU",
       filter: (
         <>
-          <Select placeholder="Contains"></Select>
+          <Select placeholder="Contains"
+          options={skuOptions}
+          onChange={handleSelectSku}
+          value={selected}
+          />
           <br />
           <TextField
             label="Tagged with"
-            value={selected[1]}
-            onChange={(e) => handleTaggedWithChange(e, 1)}
+            value={valueSKU}
+            onChange={(e) => handleSKUNumber(e, 1)}
             autoComplete="off"
             labelHidden
           />
@@ -155,7 +234,6 @@ export function Rightbar() {
       shortcut: true,
     },
   ];
-
   const appliedFilters = [];
 
   if (selected[0] !== "") {
@@ -187,6 +265,7 @@ export function Rightbar() {
           onClearAll={handleFiltersClearAll}
           hideQueryField
           labelHidden
+          hideTags
         />
       </Card>
     </div>
@@ -213,4 +292,4 @@ export function Rightbar() {
     }
   }
 }
-export default Rightbar
+export default Rightbar;

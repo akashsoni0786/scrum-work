@@ -21,6 +21,7 @@ import {
   Checkbox,
   Banner,
   Spinner,
+  ButtonGroup,
 } from "@shopify/polaris";
 import Searchbar from "../searchbar/Searchbar.js";
 import CssFile from "./TableData.module.css";
@@ -28,15 +29,22 @@ import {
   fetch_without_payload,
   fetch_with_payload,
 } from "../../utils/methods/Fetch.js";
-import { MobileVerticalDotsMajor, NoteMinor } from "@shopify/polaris-icons";
+import {
+  MobileVerticalDotsMajor,
+  NoteMinor,
+  ArrowLeftMinor,
+  ArrowRightMinor,
+} from "@shopify/polaris-icons";
 import { useDispatch, useSelector } from "react-redux";
 import {
   alldata,
+  changeTab,
   hideHeaders,
   removeChoices,
 } from "../../store/slices/Slice.js";
 import { headers, postHeaders } from "../../utils/api/Headers";
 import ActionListInPopover from "../tablePopover/TablePopover";
+import { FilterTags } from "../rightbar/FilterTags";
 const ftghfg = [
   {
     title: "Name",
@@ -86,6 +94,11 @@ const Tables = () => {
   const filterTage = useSelector((state) => state.storeWork.filteredChoice);
   const currentTab = useSelector((state) => state.storeWork.currentTab);
   const searchContent = useSelector((state) => state.storeWork.searchContent);
+  const resultFltrInventoryvalue = useSelector(
+    (state) => state.storeWork.inventoryFilter.value
+  );
+  const resultFilter = useSelector((state) => state.storeWork.moreFilter);
+
   const searchContainerId = useSelector(
     (state) => state.storeWork.searchContainerId
   );
@@ -113,6 +126,13 @@ const Tables = () => {
   const [selectedImage, setSelectedImage] = useState(true);
   const [loadLookup, setLoadLookup] = useState(false);
   const [loadSync, setLoadSync] = useState(false);
+  const [csvFileName, setCsvFileName] = useState("Loadng....");
+  const [uploadedFileName, setUploadedFileName] = useState("");
+  const [files, setFiles] = useState("");
+  const [pageCount, setPageCount] = useState(1);
+  const [totalPages, setTotalPages] = useState(0);
+  const [nextPages, setNextPages] = useState("");
+  const [previousPages, setPreviousPages] = useState("");
 
   const columns = [
     {
@@ -164,10 +184,7 @@ const Tables = () => {
       title: "Actions",
       dataIndex: "actions",
       key: "actions",
-      render: () => (
-        <ActionListInPopover/>
-       
-      ),
+      render: () => <ActionListInPopover />,
     },
   ];
   const subColumns = [
@@ -248,26 +265,26 @@ const Tables = () => {
       `${item.length === 1 ? "" : item.length + " variants"}`
     );
   };
-  const colorStatus=(status)=>{
-    console.log("Status",status)
-    if(status === "Inactive"){
-      return "success"
+  const colorStatus = (status) => {
+    console.log("Status", status);
+    if (status === "Inactive") {
+      return "success";
     }
-    if(status === "Incomplete"){
-      return "warnng"
+    if (status === "Incomplete") {
+      return "warnng";
     }
-    if(status === "Not Listed"){
-      return "surface"
+    if (status === "Not Listed") {
+      return "surface";
     }
-    if(status === "Active"){
-      return "interactive"
+    if (status === "Active") {
+      return "interactive";
     }
-    if(status === "Error"){
-      
-      return "critical"
+    if (status === "Error") {
+      return "critical";
     }
-  }
+  };
   const fetchalldata = () => {
+    FilterTags(resultFilter)
     setHasData(false);
     setLoading(true);
     let payloads;
@@ -280,16 +297,38 @@ const Tables = () => {
         target_marketplace: "eyJtYXJrZXRwbGFjZSI6ImFsbCIsInNob3BfaWQiOm51bGx9",
       };
     }
-    const url = new URL(
-      "https://multi-account.sellernext.com/home/public/connector/product/getRefineProducts"
+    let url = new URL(
+      "https://multi-account.sellernext.com/home/public/connector/product/getRefineProducts?"
     );
+    // if (Object.keys(resultFilter).length !== 0)
+    // {
+    //   url = url + 
+    // }
+
+    if (nextPages !== "") {
+      url.searchParams.append("next", nextPages);
+      // url = url + "&next="+ nextPages
+    }
+    if (previousPages !== "") {
+      // url = url + "&prev="+ previousPages
+      url.searchParams.append("prev", previousPages);
+    }
     if (searchContainerId !== "") {
       for (let i in payloads) {
         url.searchParams.append(i, payloads[i]);
       }
     }
+    
+    const pageCountUrl = new URL(
+      "https://multi-account.sellernext.com/home/public/connector/product/getRefineProductCount"
+    );
+    fetch_without_payload("GET", pageCountUrl, headers).then((response) => {
+      setTotalPages(Math.ceil(Number(response.data.count) / 10));
+    });
     fetch_without_payload("POST", url, headers).then((response) => {
       let fetchedData = [];
+      if (response.data.prev !== null) setPreviousPages(response.data.prev);
+      if (response.data.next !== null) setNextPages(response.data.next);
       response.data.rows.map((item, index) => {
         let row = {
           key: index,
@@ -347,6 +386,9 @@ const Tables = () => {
   const fetchRestData = () => {
     setHasData(false);
     setLoading(true);
+    const pageCountUrl = new URL(
+      "https://multi-account.sellernext.com/home/public/connector/product/getRefineProductCount"
+    );
     var payloads;
     if (currentTab === "Not Listed") {
       payloads = {
@@ -402,11 +444,22 @@ const Tables = () => {
 
     for (let i in payloads) {
       url.searchParams.append(i, payloads[i]);
+      pageCountUrl.searchParams.append(i, payloads[i]);
     }
+    if (nextPages !== "") {
+      url = url + "next=" + nextPages;
+    }
+    if (previousPages !== "") {
+      url = url + "prev=" + previousPages;
+    }
+    fetch_without_payload("GET", pageCountUrl, headers).then((response) => {
+      setTotalPages(Math.ceil(Number(response.data.count) / 10));
+    });
 
     fetch_without_payload("POST", url, headers).then((response) => {
       let fetchedData = [];
-
+      if (response.data.prev !== null) setPreviousPages(response.data.prev);
+      if (response.data.next !== null) setNextPages(response.data.next);
       response.data.rows.map((item, index) => {
         let row = {
           key: index,
@@ -455,11 +508,11 @@ const Tables = () => {
   };
   React.useEffect(() => {
     if (currentTab === "All") fetchalldata();
-    // if (searchContent !== "") {
-    //   if (currentTab === "Search") searchedData();
-    // }
     else fetchRestData();
-  }, [currentTab, searchContent]);
+  }, [currentTab, searchContent, pageCount, resultFltrInventoryvalue]);
+  React.useEffect(() => {
+    setPageCount(1);
+  }, [currentTab]);
   const tableProps = {
     loading,
     expandable,
@@ -573,29 +626,39 @@ const Tables = () => {
   const [activeImportedAction, setActiveImportedAction] = useState(false);
   const handleImportedAction = useCallback(() => {
     setActiveImportedAction(true);
+    const url = new URL(
+      "https://multi-account.sellernext.com/home/public/connector/csv/exportedFileName"
+    );
+    fetch_without_payload("POST", url, headers).then((response) => {
+      console.log(response);
+      setCsvFileName(response.data.value);
+    });
   }, []);
-  const ImportedActionProceed = () => {
-    setActiveImportedAction(false);
-  };
-  const ImportedActionClose = useCallback(
-    () => setActiveImportedAction(!activeImportedAction),
-    [activeImportedAction]
-  );
-  const [files, setFiles] = useState([]);
+
+  const ImportedActionClose = useCallback(() => {
+    setActiveImportedAction(!activeImportedAction);
+    setFiles("");
+  }, [activeImportedAction]);
+
   const handleDropZoneDrop = useCallback(
     (_dropFiles, acceptedFiles, _rejectedFiles) => {
-      setFiles((files) => [...files, ...acceptedFiles]);
-      if (files.length === 0) {
-        setSelectedImage(false);
+      if (acceptedFiles[0].name.includes(".csv")) {
+        setFiles(acceptedFiles);
+        setUploadedFileName(acceptedFiles[0].name);
+        if (files === []) {
+          setSelectedImage(true);
+        } else {
+          setSelectedImage(false);
+        }
       } else {
-        setSelectedImage(true);
+        alert("This is not a csv file");
       }
     },
     []
   );
-  const validImageTypes = ["image/jpeg", "image/png"];
+  const validImageTypes = "file/csv";
   const fileUpload = !files.length && (
-    <DropZone.FileUpload actionHint="Accepts  .jpg, and .png" />
+    <DropZone.FileUpload actionHint="Accepts  csv only" />
   );
   const uploadedFiles = files.length > 0 && (
     <Stack vertical>
@@ -617,6 +680,21 @@ const Tables = () => {
       ))}
     </Stack>
   );
+
+  const ImportedActionProceed = () => {
+    let url = new URL(
+      "https://multi-account.sellernext.com/home/public/connector/csv/importCSV"
+    );
+    let payload = {
+      file: uploadedFileName,
+    };
+    for (let i in payload) {
+      url.searchParams.append(i, payload[i]);
+    }
+    fetch_without_payload("POST", url, headers).then((response) => {
+      console.log(response);
+    });
+  };
   const [activeExportedAction, setActiveExportedAction] = useState(false);
 
   const handleExportedAction = useCallback(() => {
@@ -632,6 +710,15 @@ const Tables = () => {
   );
   const [checked, setChecked] = useState(false);
   const handleChange = useCallback((newChecked) => setChecked(newChecked), []);
+
+  const previousPageFunc = () => {
+    setPageCount(pageCount - 1);
+    setNextPages("");
+  };
+  const nextPageFunc = () => {
+    setPageCount(pageCount + 1);
+    setPreviousPages("");
+  };
   return (
     <>
       <div style={{ margin: "10px 5px" }}>
@@ -682,13 +769,14 @@ const Tables = () => {
       </div>
       <Stack spacing="tight">{tagMarkup}</Stack>
       <Table
+        pagination={false}
         {...tableProps}
         columns={columns}
         expandable={{
           expandedRowRender: (record) => (
             <Table
-              {...subtableProps}
               pagination={false}
+              {...subtableProps}
               columns={subColumns}
               dataSource={record.description.filter(
                 (item) => item.source_product_id !== record.source_product_id
@@ -699,6 +787,20 @@ const Tables = () => {
         }}
         dataSource={hasData ? data : []}
       />
+      <div className={CssFile.buttonsInCenter}>
+        <ButtonGroup segmented>
+          <Button onClick={previousPageFunc} disabled={pageCount === 1}>
+            <Icon source={ArrowLeftMinor} color="base" />
+          </Button>
+          <b>
+            &nbsp;&nbsp; {totalPages ? pageCount : 0}&nbsp;/&nbsp; {totalPages}{" "}
+            Page &nbsp;&nbsp;
+          </b>
+          <Button onClick={nextPageFunc} disabled={nextPages === ""}>
+            <Icon source={ArrowRightMinor} color="base" />
+          </Button>
+        </ButtonGroup>
+      </div>
       {toastMarkupAmazonLookup}
       {toastMarkupAmazonSync}
       <div>
@@ -752,14 +854,14 @@ const Tables = () => {
           onClose={ImportedActionClose}
           title="Import Products"
           primaryAction={{
-            content: "Proceed",
+            content: "Import Products",
             onAction: ImportedActionProceed,
             disabled: selectedImage,
           }}
           secondaryActions={[
             {
               content: "Close",
-              onAction: ImportedActionProceed,
+              onAction: ImportedActionClose,
             },
           ]}
         >
@@ -775,6 +877,22 @@ const Tables = () => {
                 CSV file. All changes will be reflected on the App as well as on
                 your Shopify store too.
               </p>
+              <br />
+              <Banner status="warning" onDismiss={false}>
+                <p>
+                  Last exported file was{" "}
+                  {csvFileName === "Loading..." ? (
+                    <Spinner
+                      accessibilityLabel="Small spinner example"
+                      size="small"
+                    />
+                  ) : (
+                    csvFileName
+                  )}
+                  .
+                </p>
+              </Banner>
+              <br />
               <DropZone onDrop={handleDropZoneDrop}>
                 {uploadedFiles}
                 {fileUpload}

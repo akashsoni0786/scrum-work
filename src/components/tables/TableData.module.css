@@ -12,3 +12,8 @@
 .columnsetup >*{
     margin: 5px 15px
 }
+.buttonsInCenter{
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}

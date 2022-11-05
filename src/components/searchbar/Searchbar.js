@@ -12,6 +12,7 @@ function Searchbar() {
   const ref = useRef();
   const [selectedOptions, setSelectedOptions] = useState([]);
   const [inputValue, setInputValue] = useState("");
+  const [showLoading, setShowLoading] = useState(false);
 
   const [options, setOptions] = useState([]);
   React.useEffect(() => {
@@ -70,47 +71,54 @@ function Searchbar() {
         };
         dispatch(searchedList(actionPayload));
       } else {
+        setShowLoading(true);
         clearTimeout(ref.current);
         ref.current = setTimeout(() => {
-          let payload = {
-            query: inputValue,
-            target_marketplace:
-              "eyJtYXJrZXRwbGFjZSI6ImFsbCIsInNob3BfaWQiOm51bGx9",
-          };
-          const url = new URL(
-            "https://multi-account.sellernext.com/home/public/connector/product/getSearchSuggestions"
-          );
-          for (let i in payload) {
-            url.searchParams.append(i, payload[i]);
-          }
-          let fetchedList = [];
-          fetch_without_payload("POST", url, headers).then((response) => {
-            response.data.map((item, index) => {
-              if (
-                item.title.toLowerCase().includes(inputValue) ||
-                item.brand.toLowerCase().includes(inputValue) ||
-                item.product_type.toLowerCase().includes(inputValue)
-              ) {
-                item.items.map((subitem, subindex) => {
-                  fetchedList.push({
-                    containerId: item.container_id,
-                    value: subitem.title,
-                    label: (
-                      <div className={CssFile.labelDiv}>
-                        <img src={subitem.main_image} alt="" />
-                        <div className={CssFile.details}>
-                          <h1>{subitem.title}</h1>
-                          <p>{item.brand}</p>
-                        </div>
+
+        let payload = {
+          query: inputValue,
+          target_marketplace:
+            "eyJtYXJrZXRwbGFjZSI6ImFsbCIsInNob3BfaWQiOm51bGx9",
+        };
+        const url = new URL(
+          "https://multi-account.sellernext.com/home/public/connector/product/getSearchSuggestions"
+        );
+        for (let i in payload) {
+          url.searchParams.append(i, payload[i]);
+        }
+        let fetchedList = [];
+        fetch_without_payload("POST", url, headers).then((response) => {
+          response.data.map((item, index) => {
+            if (
+              item.product_type.toLowerCase().includes(inputValue) ||
+              item.title.toLowerCase().includes(inputValue) ||
+              item.brand.toLowerCase().includes(inputValue)
+            ) {
+              item.items.map((subitem, subindex) => {
+                fetchedList.push({
+                  containerId: item.container_id,
+                  value: subitem.title,
+                  label: (
+                    <div className={CssFile.labelDiv}>
+                      <img src={subitem.main_image} alt="" />
+                      <div className={CssFile.details}>
+                        <h1>{subitem.title}</h1>
+                        <p>{item.brand}</p>
                       </div>
-                    ),
-                  });
+                    </div>
+                  ),
                 });
-              }
-            });
-            setOptions(fetchedList);
+              });
+            }
           });
-        }, 2000);
+          setOptions(fetchedList);
+          setShowLoading(false);
+          if (fetchedList === []) {
+            setOptions([{ value: "", label: "Result not found" }]);
+          }
+        });
+
+        }, 500);
       }
     };
 
@@ -135,6 +143,7 @@ function Searchbar() {
   return (
     <div style={{ height: "10px" }}>
       <Autocomplete
+        loading={showLoading}
         options={options}
         selected={selectedOptions}
         onSelect={updateSelection}

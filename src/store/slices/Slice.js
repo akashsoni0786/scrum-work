@@ -9,6 +9,12 @@ const initialState = {
   searchContent: "",
   searchContainerId: "",
   bannerProductCount: 0,
+  inventoryFilter : {
+    value : '',
+    option: ''
+  },
+  moreFilter:{}
+
 };
 
 export const storeSlice = createSlice({
@@ -53,7 +59,7 @@ export const storeSlice = createSlice({
       };
     },
     searchedList: (state, actions) => {
-      console.log(actions.payload);
+      console.log(actions.payload.containerId);
       return {
         ...state,
         searchContent: actions.payload.query,
@@ -66,6 +72,9 @@ export const storeSlice = createSlice({
         bannerProductCount: actions.payload,
       };
     },
+    storedFilter: (state,actions) =>{
+      state.moreFilter = {...state.moreFilter,...actions.payload}
+    }
   },
 });
 
@@ -78,6 +87,7 @@ export const {
   hideHeaders,
   changeTab,
   searchedList,
-  bannerCount
+  bannerCount,
+  storedFilter
 } = storeSlice.actions;
 export default storeSlice.reducer; // storeReducer  in Store.js
