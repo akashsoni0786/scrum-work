@@ -59,12 +59,8 @@ export const storeSlice = createSlice({
       };
     },
     searchedList: (state, actions) => {
-      console.log(actions.payload.containerId);
-      return {
-        ...state,
-        searchContent: actions.payload.query,
-        searchContainerId: actions.payload.containerId,
-      };
+      state.searchContent= actions.payload.query;
+      state.searchContainerId= actions.payload.containerId;
     },
     bannerCount: (state, actions) => {
       return {

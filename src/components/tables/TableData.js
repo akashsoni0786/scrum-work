@@ -128,7 +128,7 @@ const Tables = () => {
   const [loadSync, setLoadSync] = useState(false);
   const [csvFileName, setCsvFileName] = useState("Loadng....");
   const [uploadedFileName, setUploadedFileName] = useState("");
-  const [files, setFiles] = useState("");
+  const [files, setFiles] = useState([]);
   const [pageCount, setPageCount] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [nextPages, setNextPages] = useState("");
@@ -266,7 +266,6 @@ const Tables = () => {
     );
   };
   const colorStatus = (status) => {
-    console.log("Status", status);
     if (status === "Inactive") {
       return "success";
     }
@@ -284,10 +283,42 @@ const Tables = () => {
     }
   };
   const fetchalldata = () => {
-    FilterTags(resultFilter)
     setHasData(false);
+    let payloads = {};
     setLoading(true);
-    let payloads;
+    for (let key in resultFilter) {
+      console.log(key);
+      if (resultFilter.hasOwnProperty(key)) {
+        if (key === "inventory" && resultFilter[key].value !== "") {
+          payloads[`filter[items.quantity][${resultFilter[key].option}]`] =
+            resultFilter[key].value;
+        }
+        if (key === "sku" && resultFilter[key].value !== "") {
+          payloads[`filter[items.sku][${resultFilter[key].option}]`] =
+            resultFilter[key].value;
+        }
+        if (key === "tags" && resultFilter[key].value !== "") {
+          payloads[`filter[tags][3]`] = resultFilter[key].value;
+        }
+        if (key === "vendor" && resultFilter[key].value !== "") {
+          payloads[`filter[brand][${resultFilter[key].option}]`] =
+            resultFilter[key].value;
+        }
+        if (key === "productStatus" && resultFilter[key].value !== "") {
+          payloads[`filter[items.status][1]`] = resultFilter[key].option;
+        }
+        if (key === "variantAttributes" && resultFilter[key].value !== "") {
+          payloads[`filter[variant_attributes][1]`] = resultFilter[key].option;
+        }
+        if (key === "activity" && resultFilter[key].value !== "") {
+          payloads[`filter[cif_amazon_multi_activity][1]`] =
+            resultFilter[key].option;
+        }
+        if (key === "type" && resultFilter[key].value !== "") {
+          payloads[`filter[type][1]`] = resultFilter[key].option;
+        }
+      }
+    }
     if (searchContainerId !== "") {
       payloads = {
         count: 50,
@@ -298,19 +329,15 @@ const Tables = () => {
       };
     }
     let url = new URL(
-      "https://multi-account.sellernext.com/home/public/connector/product/getRefineProducts?"
+      "https://multi-account.sellernext.com/home/public/connector/product/getRefineProducts"
     );
-    // if (Object.keys(resultFilter).length !== 0)
-    // {
-    //   url = url + 
-    // }
-
+    for (let i in payloads) {
+      url.searchParams.append(i, payloads[i]);
+    }
     if (nextPages !== "") {
       url.searchParams.append("next", nextPages);
-      // url = url + "&next="+ nextPages
     }
     if (previousPages !== "") {
-      // url = url + "&prev="+ previousPages
       url.searchParams.append("prev", previousPages);
     }
     if (searchContainerId !== "") {
@@ -318,14 +345,16 @@ const Tables = () => {
         url.searchParams.append(i, payloads[i]);
       }
     }
-    
     const pageCountUrl = new URL(
       "https://multi-account.sellernext.com/home/public/connector/product/getRefineProductCount"
     );
+    payloads["productOnly"] = true;
+    payloads["target_marketplace"] =
+      "eyJtYXJrZXRwbGFjZSI6ImFsbCIsInNob3BfaWQiOm51bGx9";
     fetch_without_payload("GET", pageCountUrl, headers).then((response) => {
       setTotalPages(Math.ceil(Number(response.data.count) / 10));
     });
-    fetch_without_payload("POST", url, headers).then((response) => {
+    fetch_with_payload("POST", url, postHeaders, payloads).then((response) => {
       let fetchedData = [];
       if (response.data.prev !== null) setPreviousPages(response.data.prev);
       if (response.data.next !== null) setNextPages(response.data.next);
@@ -372,7 +401,7 @@ const Tables = () => {
           ) : (
             ""
           ),
-          activity: "--",
+          activity: item.process_tags || "--",
           actions: "",
         };
         fetchedData = [...fetchedData, row];
@@ -386,54 +415,57 @@ const Tables = () => {
   const fetchRestData = () => {
     setHasData(false);
     setLoading(true);
+    let payloads = {};
+    for (let key in resultFilter) {
+      console.log(key);
+      if (resultFilter.hasOwnProperty(key)) {
+        if (key === "inventory" && resultFilter[key].value !== "") {
+          payloads[`filter[items.quantity][${resultFilter[key].option}]`] =
+            resultFilter[key].value;
+        }
+        if (key === "sku" && resultFilter[key].value !== "") {
+          payloads[`filter[items.sku][${resultFilter[key].option}]`] =
+            resultFilter[key].value;
+        }
+        if (key === "tags" && resultFilter[key].value !== "") {
+          payloads[`filter[tags][3]`] = resultFilter[key].value;
+        }
+        if (key === "vendor" && resultFilter[key].value !== "") {
+          payloads[`filter[brand][${resultFilter[key].option}]`] =
+            resultFilter[key].value;
+        }
+        if (key === "productStatus" && resultFilter[key].value !== "") {
+          payloads[`filter[items.status][1]`] = resultFilter[key].option;
+        }
+        if (key === "variantAttributes" && resultFilter[key].value !== "") {
+          payloads[`filter[variant_attributes][1]`] = resultFilter[key].option;
+        }
+        if (key === "activity" && resultFilter[key].value !== "") {
+          payloads[`filter[cif_amazon_multi_activity][1]`] =
+            resultFilter[key].option;
+        }
+        if (key === "type" && resultFilter[key].value !== "") {
+          payloads[`filter[type][1]`] = resultFilter[key].option;
+        }
+      }
+    }
     const pageCountUrl = new URL(
       "https://multi-account.sellernext.com/home/public/connector/product/getRefineProductCount"
     );
-    var payloads;
     if (currentTab === "Not Listed") {
-      payloads = {
-        count: 50,
-        "filter[cif_amazon_multi_inactive][1]": "Not Listed",
-        // "filter[container_id][1]": searchContainerId,
-        productOnly: true,
-        target_marketplace: "eyJtYXJrZXRwbGFjZSI6ImFsbCIsInNob3BfaWQiOm51bGx9",
-      };
+      payloads["filter[cif_amazon_multi_inactive][1]"] = "Not Listed";
     }
     if (currentTab === "Inactive") {
-      payloads = {
-        count: 50,
-        "filter[items.status][1]": "Inactive",
-        // "filter[container_id][1]": searchContainerId,
-        productOnly: true,
-        target_marketplace: "eyJtYXJrZXRwbGFjZSI6ImFsbCIsInNob3BfaWQiOm51bGx9",
-      };
+      payloads["filter[items.status][1]"] = "Inactive";
     }
     if (currentTab === "Incomplete") {
-      payloads = {
-        count: 50,
-        "filter[items.status][1]": "Incomplete",
-        // "filter[container_id][1]": searchContainerId,
-        productOnly: true,
-        target_marketplace: "eyJtYXJrZXRwbGFjZSI6ImFsbCIsInNob3BfaWQiOm51bGx9",
-      };
+      payloads["filter[items.status][1]"] = "Incomplete";
     }
     if (currentTab === "Active") {
-      payloads = {
-        count: 50,
-        "filter[items.status][1]": "Active",
-        // "filter[container_id][1]": searchContainerId,
-        productOnly: true,
-        target_marketplace: "eyJtYXJrZXRwbGFjZSI6ImFsbCIsInNob3BfaWQiOm51bGx9",
-      };
+      payloads["filter[items.status][1]"] = "Active";
     }
     if (currentTab === "Error") {
-      payloads = {
-        count: 50,
-        "filter[cif_amazon_multi_activity][1]": "error",
-        // "filter[container_id][1]": searchContainerId,
-        productOnly: true,
-        target_marketplace: "eyJtYXJrZXRwbGFjZSI6ImFsbCIsInNob3BfaWQiOm51bGx9",
-      };
+      payloads["filter[cif_amazon_multi_activity][1]"] = "Active";
     }
     let url = new URL(
       "https://multi-account.sellernext.com/home/public/connector/product/getRefineProducts"
@@ -441,7 +473,10 @@ const Tables = () => {
     if (searchContainerId !== "") {
       url.searchParams.append("filter[container_id][1]=", searchContainerId);
     }
-
+    payloads["count"] = 50;
+    payloads["productOnly"] = true;
+    payloads["target_marketplace"] =
+      "eyJtYXJrZXRwbGFjZSI6ImFsbCIsInNob3BfaWQiOm51bGx9";
     for (let i in payloads) {
       url.searchParams.append(i, payloads[i]);
       pageCountUrl.searchParams.append(i, payloads[i]);
@@ -456,7 +491,7 @@ const Tables = () => {
       setTotalPages(Math.ceil(Number(response.data.count) / 10));
     });
 
-    fetch_without_payload("POST", url, headers).then((response) => {
+    fetch_with_payload("POST", url, headers, payloads).then((response) => {
       let fetchedData = [];
       if (response.data.prev !== null) setPreviousPages(response.data.prev);
       if (response.data.next !== null) setNextPages(response.data.next);
@@ -495,7 +530,7 @@ const Tables = () => {
                 }),
           inventory: inventoryCalculate(item.items),
           amazon_status: item.status || <Badge>Not Listed</Badge>,
-          activity: "--",
+          activity: item.process_tags || "--",
           actions: "",
         };
         fetchedData = [...fetchedData, row];
@@ -509,10 +544,12 @@ const Tables = () => {
   React.useEffect(() => {
     if (currentTab === "All") fetchalldata();
     else fetchRestData();
-  }, [currentTab, searchContent, pageCount, resultFltrInventoryvalue]);
+  }, [currentTab, searchContent, pageCount, resultFltrInventoryvalue,resultFilter]);
+
   React.useEffect(() => {
     setPageCount(1);
   }, [currentTab]);
+
   const tableProps = {
     loading,
     expandable,
@@ -597,7 +634,6 @@ const Tables = () => {
       url.searchParams.append(i, payload[i]);
     }
     fetch_with_payload("POST", url, postHeaders, payload).then((response) => {
-      console.log(response);
       setAmazonSyncResponse(response.message);
       setAmazonSyncToast(true);
       setLoadSync(false);
@@ -630,7 +666,6 @@ const Tables = () => {
       "https://multi-account.sellernext.com/home/public/connector/csv/exportedFileName"
     );
     fetch_without_payload("POST", url, headers).then((response) => {
-      console.log(response);
       setCsvFileName(response.data.value);
     });
   }, []);
@@ -642,51 +677,63 @@ const Tables = () => {
 
   const handleDropZoneDrop = useCallback(
     (_dropFiles, acceptedFiles, _rejectedFiles) => {
-      if (acceptedFiles[0].name.includes(".csv")) {
-        setFiles(acceptedFiles);
-        setUploadedFileName(acceptedFiles[0].name);
-        if (files === []) {
-          setSelectedImage(true);
-        } else {
-          setSelectedImage(false);
-        }
-      } else {
-        alert("This is not a csv file");
-      }
+      // if (acceptedFiles[0].name.includes(".csv")) {
+      //   setFiles(acceptedFiles);
+      //   setUploadedFileName(acceptedFiles[0].name);
+      //   if (files === []) {
+      //     setSelectedImage(true);
+      //   } else {
+      //     setSelectedImage(false);
+      //   }
+      // } else {
+      //   alert("This is not a csv file");
+      // }
+      acceptedFiles = _dropFiles.filter((file) => file.type === "text.csv");
+      _rejectedFiles = _dropFiles.filter((file) => file.type !== "text.csv");
+
+      setFiles((files) => [...acceptedFiles]);
+      console.log(acceptedFiles);
     },
     []
   );
-  const validImageTypes = "file/csv";
+  const validImageTypes = "text/csv";
+
   const fileUpload = !files.length && (
     <DropZone.FileUpload actionHint="Accepts  csv only" />
   );
+
   const uploadedFiles = files.length > 0 && (
-    <Stack vertical>
-      {files.map((file, index) => (
-        <Stack alignment="center" key={index}>
-          <Thumbnail
-            size="small"
-            alt={file.name}
-            source={
-              validImageTypes.includes(file.type)
-                ? window.URL.createObjectURL(file)
-                : NoteMinor
-            }
-          />
-          <div>
-            {file.name} <Caption>{file.size} bytes</Caption>
-          </div>
-        </Stack>
-      ))}
-    </Stack>
+    <div style={{ padding: "0" }}>
+      <Stack vertical>
+        {files.map((file, index) => (
+          <Stack alignment="center" key={index}>
+            <Thumbnail
+              size="small"
+              alt={file.name}
+              source={
+                validImageTypes.includes(file.type)
+                  ? window.URL.createObjectURL(file)
+                  : NoteMinor
+              }
+            />
+            <div>
+              {file.name} <Caption>{file.size} bytes</Caption>
+            </div>
+          </Stack>
+        ))}
+      </Stack>
+    </div>
   );
 
   const ImportedActionProceed = () => {
+    const formData = new FormData();
+    formData.append("file", files[0]);
+
     let url = new URL(
       "https://multi-account.sellernext.com/home/public/connector/csv/importCSV"
     );
     let payload = {
-      file: uploadedFileName,
+      file: formData,
     };
     for (let i in payload) {
       url.searchParams.append(i, payload[i]);

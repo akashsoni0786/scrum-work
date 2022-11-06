@@ -33,6 +33,41 @@ export function Rightbar() {
   const [selectedSKU, setSelectedSKU] = useState(0);
   const [valueSKU, setValueSKU] = useState("");
 
+  const [valueTags, setValueTags] = useState("");
+
+  const [valueProductType, setValueProductType] = useState("");
+
+  const [valueVendor, setValueVendor] = useState("");
+  const [selectedVendor, setSelectedVendor] = useState("");
+
+  const [selectedProductStatus, setSelectedProductStatus] = useState(0);
+
+  const handleSelectProductStatus = useCallback(
+    (value) => setSelectedProductStatus(value),
+    []
+  );
+
+  const [selectedVariantAttributes, setSelectedVariantAttributes] = useState(0);
+
+  const handleSelectVariantAttributes = useCallback(
+    (value) => setSelectedVariantAttributes(value),
+    []
+  );
+
+  const [selectedActivity, setSelectedActivity] = useState(0);
+
+  const handleSelectActivity = useCallback(
+    (value) => setSelectedActivity(value),
+    []
+  );
+
+  const [selectedType, setSelectedType] = useState(0);
+
+  const handleSelectType = useCallback(
+    (value) => setSelectedType(value),
+    []
+  );
+
   const handleInventoryNumber = useCallback((value, index) => {
     setValueInventory(value);
   }, []);
@@ -41,20 +76,34 @@ export function Rightbar() {
     (value) => setSelectedInventory(value),
     []
   );
-  const handleSelectSku = useCallback(
-    (value) => setSelectedSKU(value),
-    []
-  );
+  const handleSelectSku = useCallback((value) => setSelectedSKU(value), []);
 
   const handleSKUNumber = useCallback((value, index) => {
     setValueSKU(value);
   }, []);
-  
+
+  const handleValueTags = useCallback((value) => {
+    console.log("handleValueTags",value)
+    setValueTags(value)}, []);
+  const handleValueProductType = useCallback(
+    (value) => setValueProductType(value),
+    []
+  );
+
+  const handleVendorValue = useCallback((value, index) => {
+    setValueVendor(value);
+  }, []);
+  const handleSelectVendor = useCallback(
+    (value) => setSelectedVendor(value),
+    []
+  );
+
+
   const inventoryOptions = [
     { label: "Equals", value: "1" },
     { label: "Not Equals", value: "2" },
-    { label: "Greater than or Equal to", value: "3" },
-    { label: "Less than or Equal to", value: "4" },
+    { label: "Greater than or Equal to", value: "8" },
+    { label: "Less than or Equal to", value: "9" },
   ];
 
   const skuOptions = [
@@ -66,11 +115,45 @@ export function Rightbar() {
     { label: "Ends with", value: "6" },
   ];
 
+  const vendorOptions = [
+    { label: "Equals", value: "1" },
+    { label: "Not Equals", value: "2" },
+  ];
+
+  const productStatusOptions = [
+    { label: "Active", value: "Active" },
+    { label: "Not Listed", value: "Not Listed" },
+    { label: "Inactive", value: "Inactive" },
+    { label: "Incomplete", value: "Incomplete" },
+    { label: "Not Listed:Offer", value: "Not Listed:Offer" },
+  ];
+
+  const variantAttributeOptions = [
+    { label: "Title", value: "Title" },
+    { label: "Size", value: "Size" },
+    { label: "Color, Size", value: "Color, Size" },
+    { label: "Size, Color", value: "Size, Color" },
+    { label: "Title, Color", value: "Title, Color" },
+    { label: "Size, Material", value: "Size, Material" },
+    { label: "Color", value: "Color" },
+    { label: "Size, Scent", value: "Size, Scent" },
+    { label: "Title, Scent", value: "Title, Scent" },
+    { label: "Size, Title", value: "Size, Title"},
+  ];
+
+  const activityOptions = [
+    { label: "In progress", value: "1" },
+    { label: "Error", value: "2" },
+  ];
+
+  const typeOptions = [
+    { label: "Simple", value: "1" },
+    { label: "Variation", value: "2" },
+  ];
+
   React.useEffect(() => {
     clearTimeout(ref.current);
-
     ref.current = setTimeout(() => {
-
       let filterInventoryObj = {
         inventory: { value: valueInventory, option: selectedInventory },
       };
@@ -82,14 +165,84 @@ export function Rightbar() {
   React.useEffect(() => {
     clearTimeout(ref.current);
     ref.current = setTimeout(() => {
-
       let filterObj = {
         sku: { value: valueSKU, option: selectedSKU },
+      };
+      dispatch(storedFilter(filterObj));
+    }, 1000);
+  }, [valueSKU, selectedSKU]);
+
+  React.useEffect(() => {
+    clearTimeout(ref.current);
+    ref.current = setTimeout(() => {
+      let filterObj = {
+        tags: { value: valueTags },
       };
 
       dispatch(storedFilter(filterObj));
     }, 1000);
-  }, [valueSKU, selectedSKU]);
+  }, [valueTags]);
+
+  React.useEffect(() => {
+    clearTimeout(ref.current);
+    ref.current = setTimeout(() => {
+      let filterObj = {
+        productType: { value: valueProductType },
+      };
+
+      dispatch(storedFilter(filterObj));
+    }, 1000);
+  }, [valueProductType]);
+
+  React.useEffect(() => {
+    clearTimeout(ref.current);
+    ref.current = setTimeout(() => {
+      let filterObj = {
+        vendor: { value: valueVendor, option: selectedVendor },
+      };
+      dispatch(storedFilter(filterObj));
+    }, 1000);
+  }, [valueVendor, selectedVendor]);
+
+  React.useEffect(() => {
+    clearTimeout(ref.current);
+    ref.current = setTimeout(() => {
+      let filterObj = {
+        productStatus: { option: selectedProductStatus },
+      };
+      dispatch(storedFilter(filterObj));
+    }, 1000);
+  }, [selectedProductStatus]);
+
+  React.useEffect(() => {
+    clearTimeout(ref.current);
+    ref.current = setTimeout(() => {
+      let filterObj = {
+        variantAttributes: { option: selectedVariantAttributes },
+      };
+      dispatch(storedFilter(filterObj));
+    }, 1000);
+  }, [selectedVariantAttributes]);
+
+  React.useEffect(() => {
+    clearTimeout(ref.current);
+    ref.current = setTimeout(() => {
+      let filterObj = {
+        activity: { option: selectedActivity },
+      };
+      dispatch(storedFilter(filterObj));
+    }, 1000);
+  }, [selectedActivity]);
+
+  React.useEffect(() => {
+    clearTimeout(ref.current);
+    ref.current = setTimeout(() => {
+      let filterObj = {
+        type: { option: selectedType },
+      };
+      dispatch(storedFilter(filterObj));
+    }, 1000);
+  }, [selectedType]);
 
   const filters = [
     {
@@ -101,7 +254,7 @@ export function Rightbar() {
             label="Date range"
             options={inventoryOptions}
             onChange={handleSelectInventory}
-            value={selected}
+            value={selectedInventory}
           />
           <br />
           <TextField
@@ -121,10 +274,11 @@ export function Rightbar() {
       label: "SKU",
       filter: (
         <>
-          <Select placeholder="Contains"
-          options={skuOptions}
-          onChange={handleSelectSku}
-          value={selected}
+          <Select
+            placeholder="Contains"
+            options={skuOptions}
+            onChange={handleSelectSku}
+            value={selectedSKU}
           />
           <br />
           <TextField
@@ -144,10 +298,11 @@ export function Rightbar() {
       filter: (
         <TextField
           label="Tagged with"
-          value={selected[2]}
-          onChange={(e) => handleTaggedWithChange(e, 2)}
+          value={valueTags}
+          onChange={(e) => handleValueTags(e)}
           autoComplete="off"
           labelHidden
+          hideTags={false}
         />
       ),
       shortcut: true,
@@ -158,8 +313,8 @@ export function Rightbar() {
       filter: (
         <TextField
           label="Tagged with"
-          value={selected[3]}
-          onChange={(e) => handleTaggedWithChange(e, 3)}
+          value={valueProductType}
+          onChange={(e) => handleValueProductType(e)}
           autoComplete="off"
           labelHidden
         />
@@ -171,11 +326,16 @@ export function Rightbar() {
       label: "Vendor",
       filter: (
         <>
-          <Select></Select>
+          <Select
+            placeholder="Select here...."
+            options={vendorOptions}
+            onChange={handleSelectVendor}
+            value={selectedVendor}
+          ></Select>
           <TextField
             label="Tagged with"
-            value={selected[4]}
-            onChange={() => handleTaggedWithChange(4)}
+            value={valueVendor}
+            onChange={(e) => handleVendorValue(e)}
             autoComplete="off"
             labelHidden
           />
@@ -188,7 +348,7 @@ export function Rightbar() {
       label: "Template Name",
       filter: (
         <>
-          <Select></Select>
+          <Select placeholder="No template found"></Select>
         </>
       ),
       shortcut: true,
@@ -198,7 +358,12 @@ export function Rightbar() {
       label: "Product Status",
       filter: (
         <>
-          <Select></Select>
+          <Select
+            placeholder="Select here...."
+            options={productStatusOptions}
+            onChange={handleSelectProductStatus}
+            value={selectedProductStatus}
+          ></Select>
         </>
       ),
       shortcut: true,
@@ -208,7 +373,12 @@ export function Rightbar() {
       label: "Variant Attribute",
       filter: (
         <>
-          <Select></Select>
+          <Select
+            placeholder="Select here...."
+            options={variantAttributeOptions}
+            onChange={handleSelectVariantAttributes}
+            value={selectedVariantAttributes}
+          ></Select>
         </>
       ),
       shortcut: true,
@@ -218,7 +388,12 @@ export function Rightbar() {
       label: "Activity",
       filter: (
         <>
-          <Select></Select>
+          <Select
+            placeholder="Select here...."
+            options={activityOptions}
+            onChange={handleSelectActivity}
+            value={selectedActivity}
+          ></Select>
         </>
       ),
       shortcut: true,
@@ -228,7 +403,12 @@ export function Rightbar() {
       label: "Type",
       filter: (
         <>
-          <Select></Select>
+          <Select
+            placeholder="Select here...."
+            options={typeOptions}
+            onChange={handleSelectType}
+            value={selectedType}
+          ></Select>
         </>
       ),
       shortcut: true,

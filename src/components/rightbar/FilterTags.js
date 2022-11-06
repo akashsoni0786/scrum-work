@@ -1,30 +1,43 @@
-export const FilterTags=(selectedFilters)=>{
-    // {
-    //     sku: {seelctedValue: 12, inputValue: 1}
-    // }
-    const tagsProperty ={
-        inventory : "filter[items.quantity]",
-        sku : "filter[items.sku]",
-        tags : "filter[tags]",
-        productType : "filter[product_type]",
-        vendor : "filter[brand]",
-        templateName :"filter[profile.profile_name]",
-        productStatus :"filter[items.status]",
-        variantAttributes : "filter[variant_attributes]",
-        activity : "filter[cif_amazon_multi_activity]",
-        type : "filter[type]"
-    }
-    const result ={};
+export const FilterTags = (selectedFilters, url) => {
+  const tagsProperty = {
+    inventory: "filter[items.quantity]",
+    sku: "filter[items.sku]",
+    tags: "filter[tags]",
+    productType: "filter[product_type]",
+    vendor: "filter[brand]",
+    templateName: "filter[profile.profile_name]",
+    productStatus: "filter[items.status]",
+    variantAttributes: "filter[variant_attributes]",
+    activity: "filter[cif_amazon_multi_activity]",
+    type: "filter[type]",
+  };
 
-    for(let key in selectedFilters){
-        console.log("first...",selectedFilters)
-        if(Object.hasOwnProperty.call(tagsProperty, key))
-        {
-            if(selectedFilters[key].value){
-                result[`${tagsProperty[key]}[${selectedFilters?.[key]?.selectedValue}]`] = selectedFilters[key]["value"];
-            }
+
+    
+    for (let key in selectedFilters) {
+        if (tagsProperty.hasOwnProperty(key)) {
+          if (selectedFilters[key].value) {
+            url =
+              url +
+              "&" +
+              tagsProperty[key] +
+              "[" +
+              [selectedFilters?.[key]?.option] +
+              "]=" +
+              selectedFilters[key]["value"];
+          }
+          else{
+            url =
+              url +
+              "&" +
+              tagsProperty[key] +"="+
+              selectedFilters[key]["value"];
+          }
         }
-    }
-console.log("result",result)
-    return result;
-}
+      }
+  
+
+//    url =url + "&productOnly=true&target_marketplace=eyJtYXJrZXRwbGFjZSI6ImFsbCIsInNob3BfaWQiOm51bGx9";
+    console.log(url)
+  return url;
+};

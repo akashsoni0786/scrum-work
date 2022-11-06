@@ -129,6 +129,7 @@ function Searchbar() {
     if (selectedOptions !== "") {
       options.map((item) => {
         if (item.value === selectedOptions[0]) {
+          // alert(item.containerId)
           let actionPayload = {
             query: inputValue,
             containerId: item.containerId,
