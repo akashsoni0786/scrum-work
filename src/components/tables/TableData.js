@@ -1,6 +1,6 @@
-import "antd/dist/antd.css";
+import "antd/dist/antd.min.css";
 import { DownOutlined } from "@ant-design/icons";
-import { Button, Form, Image, Radio, Space, Switch, Table } from "antd";
+import { Form, Image, Radio, Space, Switch, Table } from "antd";
 import React, { useCallback, useState } from "react";
 import Rightbar from "../rightbar/Rightbar";
 import {
@@ -22,15 +22,18 @@ import {
   Banner,
   Spinner,
   ButtonGroup,
+  Button,
 } from "@shopify/polaris";
 import Searchbar from "../searchbar/Searchbar.js";
 import CssFile from "./TableData.module.css";
 import {
+  fetch_fileUpload,
   fetch_without_payload,
   fetch_with_payload,
 } from "../../utils/methods/Fetch.js";
+
 import {
-  MobileVerticalDotsMajor,
+  ClockMinor,
   NoteMinor,
   ArrowLeftMinor,
   ArrowRightMinor,
@@ -98,7 +101,6 @@ const Tables = () => {
     (state) => state.storeWork.inventoryFilter.value
   );
   const resultFilter = useSelector((state) => state.storeWork.moreFilter);
-
   const searchContainerId = useSelector(
     (state) => state.storeWork.searchContainerId
   );
@@ -133,6 +135,16 @@ const Tables = () => {
   const [totalPages, setTotalPages] = useState(0);
   const [nextPages, setNextPages] = useState("");
   const [previousPages, setPreviousPages] = useState("");
+  const [inProgressActivity, setinProgressActivity] = useState([]);
+  const [activityModal, setActivityModal] = useState(false);
+  const [showProductError,setShowProductError] = useState("")
+  const handleActivityClose = useCallback(() => setActivityModal(!activityModal), [activityModal]);
+  const handleActivityProceed = ()=>{
+    fetchalldata();
+    fetchRestData();
+    setActivityModal(false)
+  }
+
 
   const columns = [
     {
@@ -163,6 +175,7 @@ const Tables = () => {
       title: "Template",
       dataIndex: "template",
       key: "template",
+      with: "5%",
     },
     {
       title: "Inventory",
@@ -179,6 +192,7 @@ const Tables = () => {
       title: "Activity",
       dataIndex: "activity",
       key: "activity",
+      width: "25%",
     },
     {
       title: "Actions",
@@ -282,10 +296,30 @@ const Tables = () => {
       return "critical";
     }
   };
+  const inProgress = (param) => {
+    console.log(param.process_tags);
+    setinProgressActivity(param.process_tags)
+    setActivityModal(true)
+  };
+  const viewErrorModal=(data)=>{
+    console.log(data)
+    // alert()
+  }
   const fetchalldata = () => {
-    setHasData(false);
-    let payloads = {};
     setLoading(true);
+    setHasData(false);
+    let payloads = {
+      count: 50,
+      target_marketplace: "eyJtYXJrZXRwbGFjZSI6ImFsbCIsInNob3BfaWQiOm51bGx9",
+    };
+    let url = new URL(
+      "https://multi-account.sellernext.com/home/public/connector/product/getRefineProducts"
+    );
+
+    for (let i in payloads) {
+      url.searchParams.append(i, payloads[i]);
+    }
+
     for (let key in resultFilter) {
       console.log(key);
       if (resultFilter.hasOwnProperty(key)) {
@@ -304,7 +338,7 @@ const Tables = () => {
           payloads[`filter[brand][${resultFilter[key].option}]`] =
             resultFilter[key].value;
         }
-        if (key === "productStatus" && resultFilter[key].value !== "") {
+        if (key === "productStatus" && resultFilter[key].option !== "") {
           payloads[`filter[items.status][1]`] = resultFilter[key].option;
         }
         if (key === "variantAttributes" && resultFilter[key].value !== "") {
@@ -314,36 +348,26 @@ const Tables = () => {
           payloads[`filter[cif_amazon_multi_activity][1]`] =
             resultFilter[key].option;
         }
-        if (key === "type" && resultFilter[key].value !== "") {
+        if (key === "type" && resultFilter[key].option !== "") {
           payloads[`filter[type][1]`] = resultFilter[key].option;
         }
       }
     }
+    console.log("searchContainerId", searchContainerId);
     if (searchContainerId !== "") {
-      payloads = {
-        count: 50,
-        "filter[cif_amazon_multi_inactive][1]": "Not Listed",
-        "filter[container_id][1]": searchContainerId,
-        productOnly: true,
-        target_marketplace: "eyJtYXJrZXRwbGFjZSI6ImFsbCIsInNob3BfaWQiOm51bGx9",
-      };
+      payloads["filter[cif_amazon_multi_inactive][1]"] = "Not Listed";
+      payloads["filter[container_id][1]"] = searchContainerId;
+      payloads["productOnly"] = true;
     }
-    let url = new URL(
-      "https://multi-account.sellernext.com/home/public/connector/product/getRefineProducts"
-    );
+
     for (let i in payloads) {
       url.searchParams.append(i, payloads[i]);
     }
     if (nextPages !== "") {
-      url.searchParams.append("next", nextPages);
+      payloads["next"] = nextPages;
     }
     if (previousPages !== "") {
-      url.searchParams.append("prev", previousPages);
-    }
-    if (searchContainerId !== "") {
-      for (let i in payloads) {
-        url.searchParams.append(i, payloads[i]);
-      }
+      payloads["prev"] = previousPages;
     }
     const pageCountUrl = new URL(
       "https://multi-account.sellernext.com/home/public/connector/product/getRefineProductCount"
@@ -352,9 +376,9 @@ const Tables = () => {
     payloads["target_marketplace"] =
       "eyJtYXJrZXRwbGFjZSI6ImFsbCIsInNob3BfaWQiOm51bGx9";
     fetch_without_payload("GET", pageCountUrl, headers).then((response) => {
-      setTotalPages(Math.ceil(Number(response.data.count) / 10));
+      setTotalPages(Math.ceil(Number(response.data.count) / 50));
     });
-    fetch_with_payload("POST", url, postHeaders, payloads).then((response) => {
+    fetch_without_payload("GET", url, headers).then((response) => {
       let fetchedData = [];
       if (response.data.prev !== null) setPreviousPages(response.data.prev);
       if (response.data.next !== null) setNextPages(response.data.next);
@@ -392,16 +416,35 @@ const Tables = () => {
                   }
                 }),
           inventory: inventoryCalculate(item.items),
-          amazon_status: Object.keys(item.items[0]).includes("error") ? (
-            <Badge status="critical">Error</Badge>
-          ) : item.items[0].status ? (
-            <Badge status="surface">{item.items[0].status}</Badge>
-          ) : item.items.length === 1 ? (
-            <Badge status="surface">Not Listed</Badge>
-          ) : (
-            ""
-          ),
-          activity: item.process_tags || "--",
+          amazon_status:
+            amazonStatus(item)[0] === "error" ?(
+              <>
+              <Badge status="critical">Error</Badge>
+              <br />
+              <a onClick={()=>{setShowProductError(amazonStatus(item)[1])}} href>
+              {/* <p onClick={()=>viewErrorModal(item[0])}>View Error</p> */}
+              {/* <a onClick={()=>{showProductErrorFunc(amazonStatus(item)[1])}} href> */}
+              
+                view error
+              </a>
+              </>
+            ):
+            <Badge status="new">{amazonStatus(item)}</Badge>
+            ,
+          activity:
+            Object.keys(item).includes("process_tags") ||
+            Object.keys(item.items[0]).includes("process_tags") ? (
+              <Button
+                plain
+                monochrome
+                onClick={() => inProgress(item.items[0] || item.process_tags)}
+              >
+                <Icon source={ClockMinor} />
+                In progress
+              </Button>
+            ) : (
+              "--"
+            ),
           actions: "",
         };
         fetchedData = [...fetchedData, row];
@@ -412,10 +455,45 @@ const Tables = () => {
       setHasData(true);
     });
   };
+  const amazonStatus = (it) => {
+    var status = "";
+    if (it.items.length === 1) {
+      if (Object.keys(it.items[0]).includes("error")) {
+        return ["error", "Product Error : " + it.items[0]["error"].product];
+      } else if (Object.keys(it.items[0]).includes("status"))
+        status = it.items[0]["status"];
+      else status = "Not Listed";
+    } else {
+      if (Object.keys(it.items[0]).includes("error")) {
+        return ["error", "Product Error : " + it.items[0]["error"].product];
+      } else {
+        status = "Not Listed";
+      }
+    }
+    return [status, ""];
+  };
   const fetchRestData = () => {
     setHasData(false);
     setLoading(true);
-    let payloads = {};
+
+    const pageCountUrl = new URL(
+      "https://multi-account.sellernext.com/home/public/connector/product/getRefineProductCount"
+    );
+    let url = new URL(
+      "https://multi-account.sellernext.com/home/public/connector/product/getRefineProducts?"
+    );
+    let payloads = {
+      count: 50,
+      productOnly:true,
+      target_marketplace: "eyJtYXJrZXRwbGFjZSI6ImFsbCIsInNob3BfaWQiOm51bGx9",
+    }
+    for (let i in payloads) {
+      pageCountUrl.searchParams.append(i, payloads[i]);
+    }
+
+    if (searchContainerId !== "") {
+      payloads["filter[container_id][1]="] = searchContainerId;
+    }
     for (let key in resultFilter) {
       console.log(key);
       if (resultFilter.hasOwnProperty(key)) {
@@ -434,7 +512,7 @@ const Tables = () => {
           payloads[`filter[brand][${resultFilter[key].option}]`] =
             resultFilter[key].value;
         }
-        if (key === "productStatus" && resultFilter[key].value !== "") {
+        if (key === "productStatus" && resultFilter[key].option !== "") {
           payloads[`filter[items.status][1]`] = resultFilter[key].option;
         }
         if (key === "variantAttributes" && resultFilter[key].value !== "") {
@@ -444,14 +522,12 @@ const Tables = () => {
           payloads[`filter[cif_amazon_multi_activity][1]`] =
             resultFilter[key].option;
         }
-        if (key === "type" && resultFilter[key].value !== "") {
+        if (key === "type" && resultFilter[key].option !== "") {
           payloads[`filter[type][1]`] = resultFilter[key].option;
         }
       }
     }
-    const pageCountUrl = new URL(
-      "https://multi-account.sellernext.com/home/public/connector/product/getRefineProductCount"
-    );
+   
     if (currentTab === "Not Listed") {
       payloads["filter[cif_amazon_multi_inactive][1]"] = "Not Listed";
     }
@@ -467,20 +543,7 @@ const Tables = () => {
     if (currentTab === "Error") {
       payloads["filter[cif_amazon_multi_activity][1]"] = "Active";
     }
-    let url = new URL(
-      "https://multi-account.sellernext.com/home/public/connector/product/getRefineProducts"
-    );
-    if (searchContainerId !== "") {
-      url.searchParams.append("filter[container_id][1]=", searchContainerId);
-    }
-    payloads["count"] = 50;
-    payloads["productOnly"] = true;
-    payloads["target_marketplace"] =
-      "eyJtYXJrZXRwbGFjZSI6ImFsbCIsInNob3BfaWQiOm51bGx9";
-    for (let i in payloads) {
-      url.searchParams.append(i, payloads[i]);
-      pageCountUrl.searchParams.append(i, payloads[i]);
-    }
+
     if (nextPages !== "") {
       url = url + "next=" + nextPages;
     }
@@ -488,16 +551,16 @@ const Tables = () => {
       url = url + "prev=" + previousPages;
     }
     fetch_without_payload("GET", pageCountUrl, headers).then((response) => {
-      setTotalPages(Math.ceil(Number(response.data.count) / 10));
+      setTotalPages(Math.ceil(Number(response.data.count) / 50));
     });
 
-    fetch_with_payload("POST", url, headers, payloads).then((response) => {
+    fetch_without_payload("GET", url, headers).then((response) => {
       let fetchedData = [];
       if (response.data.prev !== null) setPreviousPages(response.data.prev);
       if (response.data.next !== null) setNextPages(response.data.next);
       response.data.rows.map((item, index) => {
         let row = {
-          key: index,
+          key: index+Math.random(),
           source_product_id: item.source_product_id,
           image: item.main_image,
           title: item.title,
@@ -512,13 +575,18 @@ const Tables = () => {
             product_title: subItem.title,
             source_product_id: subItem.source_product_id,
             inventory: subItem.quantity || 0,
-            amazon_status: Object.keys(subItem).includes("error") ? (
+            amazon_status: 
+            amazonStatus(item)[0] === "error" ?(
+              <>
               <Badge status="critical">Error</Badge>
-            ) : subItem.status ? (
-              <Badge status="new">{subItem.status}</Badge>
-            ) : (
-              <Badge status="new">Not Listed</Badge>
-            ),
+              <br />
+              <p onClick={()=>{setShowProductError(amazonStatus(item)[1])}} >
+                view error
+              </p>
+              </>
+            ):
+            <Badge status="new">{amazonStatus(item)}</Badge>
+            ,
           })),
           product_details:
             item.items.length === 1
@@ -530,7 +598,20 @@ const Tables = () => {
                 }),
           inventory: inventoryCalculate(item.items),
           amazon_status: item.status || <Badge>Not Listed</Badge>,
-          activity: item.process_tags || "--",
+          activity:
+          (Object.keys(item).includes("process_tags") ||
+          Object.keys(item.items[0]).includes("process_tags")) ? (
+            <Button
+              plain
+              monochrome
+              onClick={() => inProgress(item.items[0].process_tags || item.process_tags)}
+            >
+              <Icon source={ClockMinor} />
+              In progress
+            </Button>
+          ) : (
+            "--"
+          ),
           actions: "",
         };
         fetchedData = [...fetchedData, row];
@@ -544,7 +625,13 @@ const Tables = () => {
   React.useEffect(() => {
     if (currentTab === "All") fetchalldata();
     else fetchRestData();
-  }, [currentTab, searchContent, pageCount, resultFltrInventoryvalue,resultFilter]);
+  }, [
+    currentTab,
+    searchContent,
+    pageCount,
+    resultFltrInventoryvalue,
+    resultFilter,
+  ]);
 
   React.useEffect(() => {
     setPageCount(1);
@@ -677,22 +764,23 @@ const Tables = () => {
 
   const handleDropZoneDrop = useCallback(
     (_dropFiles, acceptedFiles, _rejectedFiles) => {
-      // if (acceptedFiles[0].name.includes(".csv")) {
-      //   setFiles(acceptedFiles);
-      //   setUploadedFileName(acceptedFiles[0].name);
-      //   if (files === []) {
-      //     setSelectedImage(true);
-      //   } else {
-      //     setSelectedImage(false);
-      //   }
-      // } else {
-      //   alert("This is not a csv file");
-      // }
-      acceptedFiles = _dropFiles.filter((file) => file.type === "text.csv");
-      _rejectedFiles = _dropFiles.filter((file) => file.type !== "text.csv");
+      if (acceptedFiles[0].name.includes(".csv")) {
+        setFiles(acceptedFiles);
+        setUploadedFileName(acceptedFiles[0].name);
+        if (files === []) {
+          setSelectedImage(true);
+        } else {
+          setSelectedImage(false);
+          setFiles(acceptedFiles);
+        }
+      } else {
+        alert("This is not a csv file");
+      }
 
-      setFiles((files) => [...acceptedFiles]);
-      console.log(acceptedFiles);
+      // acceptedFiles = _dropFiles.filter((file) => file.type === "text.csv");
+      // _rejectedFiles = _dropFiles.filter((file) => file.type !== "text.csv");
+
+
     },
     []
   );
@@ -728,20 +816,17 @@ const Tables = () => {
   const ImportedActionProceed = () => {
     const formData = new FormData();
     formData.append("file", files[0]);
-
     let url = new URL(
       "https://multi-account.sellernext.com/home/public/connector/csv/importCSV"
     );
     let payload = {
       file: formData,
-    };
-    for (let i in payload) {
-      url.searchParams.append(i, payload[i]);
     }
-    fetch_without_payload("POST", url, headers).then((response) => {
+    fetch_fileUpload("POST", url, postHeaders,payload).then((response) => {
       console.log(response);
     });
   };
+
   const [activeExportedAction, setActiveExportedAction] = useState(false);
 
   const handleExportedAction = useCallback(() => {
@@ -1081,6 +1166,31 @@ Selected Products: 0 Product"
             </TextContainer>
           </Modal.Section>
         </Modal>
+
+        <Modal
+        // activator={activator}
+        open={activityModal}
+        onClose={handleActivityClose}
+        title="Actions in progress"
+        primaryAction={{
+          content: 'Refresh to update status',
+          onAction: handleActivityProceed,
+        }}
+        secondaryActions={[
+          {
+            content: 'Close',
+            onAction: handleActivityClose,
+          },
+        ]}
+      >
+        <Modal.Section>
+          <TextContainer>
+            {inProgressActivity.map((i,index)=>{
+              return <p><b>{index+1}:&nbsp;&nbsp;</b>{i}</p>
+            })}
+          </TextContainer>
+        </Modal.Section>
+      </Modal>
       </div>
     </>
   );

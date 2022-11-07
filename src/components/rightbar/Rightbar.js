@@ -27,10 +27,10 @@ export function Rightbar() {
     setSelected(tempSelected);
   }, []);
 
-  const [selectedInventory, setSelectedInventory] = useState(0);
+  const [selectedInventory, setSelectedInventory] = useState("");
   const [valueInventory, setValueInventory] = useState("");
 
-  const [selectedSKU, setSelectedSKU] = useState(0);
+  const [selectedSKU, setSelectedSKU] = useState("");
   const [valueSKU, setValueSKU] = useState("");
 
   const [valueTags, setValueTags] = useState("");
@@ -40,28 +40,28 @@ export function Rightbar() {
   const [valueVendor, setValueVendor] = useState("");
   const [selectedVendor, setSelectedVendor] = useState("");
 
-  const [selectedProductStatus, setSelectedProductStatus] = useState(0);
+  const [selectedProductStatus, setSelectedProductStatus] = useState("");
 
   const handleSelectProductStatus = useCallback(
     (value) => setSelectedProductStatus(value),
     []
   );
 
-  const [selectedVariantAttributes, setSelectedVariantAttributes] = useState(0);
+  const [selectedVariantAttributes, setSelectedVariantAttributes] = useState("");
 
   const handleSelectVariantAttributes = useCallback(
     (value) => setSelectedVariantAttributes(value),
     []
   );
 
-  const [selectedActivity, setSelectedActivity] = useState(0);
+  const [selectedActivity, setSelectedActivity] = useState("");
 
   const handleSelectActivity = useCallback(
     (value) => setSelectedActivity(value),
     []
   );
 
-  const [selectedType, setSelectedType] = useState(0);
+  const [selectedType, setSelectedType] = useState("");
 
   const handleSelectType = useCallback(
     (value) => setSelectedType(value),
@@ -147,8 +147,8 @@ export function Rightbar() {
   ];
 
   const typeOptions = [
-    { label: "Simple", value: "1" },
-    { label: "Variation", value: "2" },
+    { label: "Simple", value: "Simple" },
+    { label: "Variation", value: "Variation" },
   ];
 
   React.useEffect(() => {
@@ -321,28 +321,28 @@ export function Rightbar() {
       ),
       shortcut: true,
     },
-    {
-      key: "vendor",
-      label: "Vendor",
-      filter: (
-        <>
-          <Select
-            placeholder="Select here...."
-            options={vendorOptions}
-            onChange={handleSelectVendor}
-            value={selectedVendor}
-          ></Select>
-          <TextField
-            label="Tagged with"
-            value={valueVendor}
-            onChange={(e) => handleVendorValue(e)}
-            autoComplete="off"
-            labelHidden
-          />
-        </>
-      ),
-      shortcut: true,
-    },
+    // {
+    //   key: "vendor",
+    //   label: "Vendor",
+    //   filter: (
+    //     <>
+    //       <Select
+    //         placeholder="Select here...."
+    //         options={vendorOptions}
+    //         onChange={handleSelectVendor}
+    //         value={selectedVendor}
+    //       ></Select>
+    //       <TextField
+    //         label="Tagged with"
+    //         value={valueVendor}
+    //         onChange={(e) => handleVendorValue(e)}
+    //         autoComplete="off"
+    //         labelHidden
+    //       />
+    //     </>
+    //   ),
+    //   shortcut: true,
+    // },
     {
       key: "templateName",
       label: "Template Name",
@@ -445,7 +445,7 @@ export function Rightbar() {
           onClearAll={handleFiltersClearAll}
           hideQueryField
           labelHidden
-          hideTags
+          // hideTags
         />
       </Card>
     </div>

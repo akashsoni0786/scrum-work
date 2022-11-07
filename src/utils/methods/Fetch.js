@@ -28,3 +28,11 @@ export const fetch_with_payload = async (methods,url, header,payload) => {
     body:JSON.stringify(payload)
   }).then((response) => response.json());
 };
+
+export const fetch_fileUpload = async (methods,url, header,payload) => {
+  return fetch(url, {
+    method: methods,
+    headers: header,
+    body:payload.file
+  }).then((response) => response.json());
+};
