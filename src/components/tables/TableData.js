@@ -858,20 +858,22 @@ const Tables = () => {
   const ImportedActionProceed = () => {
     const formData = new FormData();
 
-    formData.append("file", files);
+    formData.append("file", files[0]);
     let url = new URL(
       "https://multi-account.sellernext.com/home/public/connector/csv/importCSV"
     );
     let payload = {
       file: formData,
     };
+    let res = "No response found!"
     fetch_fileUpload("POST", url, headers, payload.file).then((response) => {
-      console.log(response)
+      if(response){
+        res = response.message
+      }
+
     });
+    setImportFileResponseValue(res);
     setImportFileResponse(true);
-    setImportFileResponseValue(
-      "No export history found, kindly export data first to import and edit"
-    );
     setActiveImportedAction(false);
   };
 

@@ -72,6 +72,7 @@ function Searchbar() {
         };
         dispatch(searchedList(actionPayload));
         dispatch(setSearchMode("Off"))
+        setOptions([])
       } else {
         setShowLoading(true);
         clearTimeout(ref.current);
