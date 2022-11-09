@@ -323,40 +323,55 @@ const Tables = () => {
       count: 50,
       target_marketplace: "eyJtYXJrZXRwbGFjZSI6ImFsbCIsInNob3BfaWQiOm51bGx9",
     };
+    let noFilter = true;
     let url = new URL(
       "https://multi-account.sellernext.com/home/public/connector/product/getRefineProducts"
     );
-
+    const pageCountUrl = new URL(
+      "https://multi-account.sellernext.com/home/public/connector/product/getRefineProductCount"
+    );
     for (let key in resultFilter) {
       if (resultFilter.hasOwnProperty(key)) {
+
         if (key === "inventory" && resultFilter[key].value !== "") {
+          noFilter=false
           payloads[`filter[items.quantity][${resultFilter[key].option}]`] =
             resultFilter[key].value;
         }
         if (key === "sku" && resultFilter[key].value !== "") {
+          noFilter=false
           payloads[`filter[items.sku][${resultFilter[key].option}]`] =
             resultFilter[key].value;
         }
         if (key === "tags" && resultFilter[key].value !== "") {
+          noFilter=false
           payloads[`filter[tags][3]`] = resultFilter[key].value;
         }
         if (key === "vendor" && resultFilter[key].value !== "") {
+          noFilter=false
           payloads[`filter[brand][${resultFilter[key].option}]`] =
             resultFilter[key].value;
         }
         if (key === "productStatus" && resultFilter[key].option !== "") {
+          noFilter=false
           payloads[`filter[items.status][1]`] = resultFilter[key].option;
         }
         if (key === "variantAttributes" && resultFilter[key].value !== "") {
+          noFilter=false
           payloads[`filter[variant_attributes][1]`] = resultFilter[key].option;
         }
         if (key === "activity" && resultFilter[key].value !== "") {
+          noFilter=false
           payloads[`filter[cif_amazon_multi_activity][1]`] =
             resultFilter[key].option;
         }
         if (key === "type" && resultFilter[key].option !== "") {
+          noFilter=false
           payloads[`filter[type][1]`] = resultFilter[key].option;
         }
+      }
+      else{
+        noFilter = true
       }
     }
 
@@ -364,16 +379,15 @@ const Tables = () => {
       payloads["filter[container_id][1]"] = searchContainerId;
       payloads["productOnly"] = true;
     }
+    if(noFilter){
+      if (nextPages !== "") {
+        payloads["next"] = nextPages;
+      }
+      if (previousPages !== "") {
+        payloads["prev"] = previousPages;
+      }
+    }
     
-    if (nextPages !== "") {
-      payloads["next"] = nextPages;
-    }
-    if (previousPages !== "") {
-      payloads["prev"] = previousPages;
-    }
-    const pageCountUrl = new URL(
-      "https://multi-account.sellernext.com/home/public/connector/product/getRefineProductCount"
-    );
     for (let i in payloads) {
       url.searchParams.append(i, payloads[i]);
     }
@@ -481,6 +495,7 @@ const Tables = () => {
   const fetchRestData = () => {
     setLoading(true);
     setHasData(false);
+    let noFilter = true
     let payloads = {
       target_marketplace: "eyJtYXJrZXRwbGFjZSI6ImFsbCIsInNob3BfaWQiOm51bGx9",
     };
@@ -522,33 +537,44 @@ const Tables = () => {
     for (let key in resultFilter) {
       if (resultFilter.hasOwnProperty(key)) {
         if (key === "inventory" && resultFilter[key].value !== "") {
+          noFilter = false
           payloads[`filter[items.quantity][${resultFilter[key].option}]`] =
             resultFilter[key].value;
         }
         if (key === "sku" && resultFilter[key].value !== "") {
+          noFilter = false
           payloads[`filter[items.sku][${resultFilter[key].option}]`] =
             resultFilter[key].value;
         }
         if (key === "tags" && resultFilter[key].value !== "") {
+          noFilter = false
           payloads[`filter[tags][3]`] = resultFilter[key].value;
         }
         if (key === "vendor" && resultFilter[key].value !== "") {
+          noFilter = false
           payloads[`filter[brand][${resultFilter[key].option}]`] =
             resultFilter[key].value;
         }
         if (key === "productStatus" && resultFilter[key].option !== "") {
+          noFilter = false
           payloads[`filter[items.status][1]`] = resultFilter[key].option;
         }
         if (key === "variantAttributes" && resultFilter[key].value !== "") {
+          noFilter = false
           payloads[`filter[variant_attributes][1]`] = resultFilter[key].option;
         }
         if (key === "activity" && resultFilter[key].value !== "") {
+          noFilter = false
           payloads[`filter[cif_amazon_multi_activity][1]`] =
             resultFilter[key].option;
         }
         if (key === "type" && resultFilter[key].option !== "") {
+          noFilter = false
           payloads[`filter[type][1]`] = resultFilter[key].option;
         }
+      }
+      else{
+        noFilter = true
       }
     }
     if (searchModeVisibility === "On" && searchContainerId !== "") {
@@ -556,11 +582,13 @@ const Tables = () => {
       payloads["productOnly"] = true;
     }
     
-    if (nextPages !== "") {
-      payloads["next"] = nextPages;
-    }
-    if (previousPages !== "") {
-      payloads["prev"] = previousPages;
+    if(noFilter){
+      if (nextPages !== "") {
+        payloads["next"] = nextPages;
+      }
+      if (previousPages !== "") {
+        payloads["prev"] = previousPages;
+      }
     }
     const pageCountUrl = new URL(
       "https://multi-account.sellernext.com/home/public/connector/product/getRefineProductCount"
@@ -688,6 +716,7 @@ const Tables = () => {
     dispatch(hideHeaders(true));
   };
   const tagMarkup = filterTage.map((option) => {
+    console.log(filterTage)
     dispatch(hideHeaders(false));
     return (
       <Tag key={option} onRemove={removeTag(option)}>

@@ -76,7 +76,12 @@ export const storeSlice = createSlice({
       };
     },
     storedFilter: (state,actions) =>{
+      console.log(actions.payload)
+      console.log(Object.keys(actions.payload))
+      // let data = actions.payload.value
       state.moreFilter = {...state.moreFilter,...actions.payload}
+      // state.filteredChoice = [...state.filteredChoice]
+      
     }
   },
 });
