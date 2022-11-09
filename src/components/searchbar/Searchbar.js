@@ -2,7 +2,7 @@ import { Autocomplete, Icon, Spinner } from "@shopify/polaris";
 import { SearchMinor } from "@shopify/polaris-icons";
 import React, { useState, useCallback, useMemo, useRef } from "react";
 import { useDispatch } from "react-redux";
-import { changeTab, choices, searchedList } from "../../store/slices/Slice";
+import { changeTab, choices, searchedList, setSearchMode } from "../../store/slices/Slice";
 import { fetch_without_payload } from "../../utils/methods/Fetch";
 import { headers } from "../../utils/api/Headers";
 import CssFile from "./Searchbar.module.css";
@@ -17,6 +17,7 @@ function Searchbar() {
   const [options, setOptions] = useState([]);
   React.useEffect(() => {
     dispatch(choices(selectedOptions));
+    dispatch(setSearchMode("On"))
   }, [selectedOptions]);
   const updateText = useCallback(
     (value) => {
@@ -70,6 +71,7 @@ function Searchbar() {
           containerId: "",
         };
         dispatch(searchedList(actionPayload));
+        dispatch(setSearchMode("Off"))
       } else {
         setShowLoading(true);
         clearTimeout(ref.current);
@@ -129,13 +131,13 @@ function Searchbar() {
     if (selectedOptions !== "") {
       options.map((item) => {
         if (item.value === selectedOptions[0]) {
-          // alert(item.containerId)
+          
           let actionPayload = {
             query: inputValue,
             containerId: item.containerId,
           };
           dispatch(searchedList(actionPayload));
-          dispatch(changeTab("Search"));
+          // dispatch(changeTab("Search"));
         }
       });
     }

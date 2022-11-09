@@ -1,42 +1,60 @@
-import {Button, Modal, TextContainer} from '@shopify/polaris';
+import {Badge, Button, Card, Modal, Tabs, TextContainer} from '@shopify/polaris';
 import {useState, useCallback} from 'react';
 
-function Modals() {
-  const [activityModal, setActivityModal] = useState(true);
+function ErrorModals(props) {
 
-  const handleActivityClose = useCallback(() => setActivityModal(!activityModal), [activityModal]);
+  const [selected, setSelected] = useState(0);
 
-  const activator = <Button onClick={handleActivityClose}>Open</Button>;
+  const handleTabChange = useCallback(
+    (selectedTabIndex) => setSelected(selectedTabIndex),
+    [],
+  );
+
+  const tabs = [
+    {
+      id: 'Product Error',
+      content: <><span>Product Error</span> &nbsp;<Badge status='warning'>3</Badge></>,
+      accessibilityLabel: 'All customers',
+      panelID: 'all-customers-fitted-content-2',
+    },
+    {
+      id: 'Variant Error',
+      content: <><span>Variant Error</span> &nbsp;<Badge status='critical'>3</Badge></>,
+      panelID: 'accepts-marketing-fitted-Ccontent-2',
+    },
+  ];
 
   return (
     <div style={{height: '500px'}}>
       <Modal
-        activator={activator}
-        open={activityModal}
-        onClose={handleActivityClose}
-        title="Reach more shoppers with Instagram product tags"
+        open={props.errorModal}
+        onClose={props.handleErrorClose}
+        title="Errors"
         primaryAction={{
-          content: 'Add Instagram',
-          onAction: handleActivityClose,
+          content: 'Fix Errors',
+          onAction: props.handleErrorClose,
         }}
         secondaryActions={[
           {
-            content: 'Learn more',
-            onAction: handleActivityClose,
+            content: 'Close',
+            onAction: props.handleErrorClose,
           },
         ]}
       >
         <Modal.Section>
           <TextContainer>
-            <p>
-              Use Instagram posts to share your products with millions of
-              people. Let shoppers buy from your store without leaving
-              Instagram.
-            </p>
+          <Card>
+      <Tabs tabs={tabs} selected={selected} onSelect={handleTabChange} >
+        <Card.Section title={tabs[selected].content}>
+          {selected === 0 && <p>AKASH</p>}
+          {selected === 1 && <p>Patal</p>}
+        </Card.Section>
+      </Tabs>
+    </Card>
           </TextContainer>
         </Modal.Section>
       </Modal>
     </div>
   );
 }
-export default Modals
+export default ErrorModals

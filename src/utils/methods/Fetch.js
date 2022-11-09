@@ -33,6 +33,6 @@ export const fetch_fileUpload = async (methods,url, header,payload) => {
   return fetch(url, {
     method: methods,
     headers: header,
-    body:payload.file
+    body:payload
   }).then((response) => response.json());
 };

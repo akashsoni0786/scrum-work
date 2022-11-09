@@ -1,11 +1,12 @@
 import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
-  username: "",
+  username: sessionStorage.getItem("username"),
   gridData: [],
   showHeader: true,
   filteredChoice: [],
-  currentTab: "All",
+  currentTab: sessionStorage.getItem("currentTab"),
+  searchMode: sessionStorage.getItem("searchMode"),
   searchContent: "",
   searchContainerId: "",
   bannerProductCount: 0,
@@ -14,7 +15,6 @@ const initialState = {
     option: ''
   },
   moreFilter:{}
-
 };
 
 export const storeSlice = createSlice({
@@ -28,22 +28,24 @@ export const storeSlice = createSlice({
       };
     },
     alldata: (state, actions) => {
+      sessionStorage.setItem("gridData", JSON.stringify(actions.payload));
       return {
         ...state,
         gridData: actions.payload,
       };
     },
     choices: (state, actions) => {
-      // console.log(state.filteredChoice)
+      
       return {
         ...state,
         filteredChoice: [...actions.payload],
       };
     },
+
     removeChoices: (state,actions) => {
       return {
         ...state,
-        filteredChoice :  state.filteredChoice.filter((previousTag) => previousTag !== actions.payload)
+        filteredChoice :  state.filteredChoice.filter((previousTag) => previousTag !== actions.payload),
       };
     },
     hideHeaders: (state, actions) => {
@@ -53,10 +55,15 @@ export const storeSlice = createSlice({
       };
     },
     changeTab: (state, actions) => {
+      sessionStorage.setItem("currentTab",actions.payload);
       return {
         ...state,
         currentTab: actions.payload,
       };
+    },
+    setSearchMode:(state, actions) => {
+      sessionStorage.setItem("searchMode",actions.payload);
+      state.searchMode = actions.payload
     },
     searchedList: (state, actions) => {
       state.searchContent= actions.payload.query;
@@ -84,6 +91,7 @@ export const {
   changeTab,
   searchedList,
   bannerCount,
-  storedFilter
+  storedFilter,
+  setSearchMode
 } = storeSlice.actions;
 export default storeSlice.reducer; // storeReducer  in Store.js

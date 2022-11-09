@@ -64,6 +64,9 @@ const Login = () => {
             if (data.success === true) {
               sessionStorage.setItem("token", data.data.token);
               sessionStorage.setItem("username", user);
+              sessionStorage.setItem("gridData",JSON.stringify([]));
+              sessionStorage.setItem("currentTab", "All");
+              sessionStorage.setItem("searchMode","Off");
               dispatch(login(user));
               navigate("/dashboard", {
                 state: { mytoken: sessionStorage.getItem("token") },

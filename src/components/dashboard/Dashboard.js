@@ -15,18 +15,16 @@ import TableData from "../tables/TableData";
 import TopNavbar from "../topbar/Topbar";
 import { useDispatch, useSelector } from "react-redux";
 import { bannerCount, changeTab } from "../../store/slices/Slice";
-import { fetch_without_payload } from "../../utils/methods/Fetch";
-import { headers } from "../../utils/api/Headers";
+import { fetch_without_payload, fetch_with_payload } from "../../utils/methods/Fetch";
+import { headers, postHeaders } from "../../utils/api/Headers";
 
 const Dashboard = () => {
   const [selected, setSelected] = useState(0);
-  const [notListed, setNotListed] = useState(0);
-  const [inactive, setInactive] = useState(0);
-  const [incomplete, setIncomplete] = useState(0);
-  const [active, setActive] = useState(0);
-  const bannerProductCount = useSelector(
-    (state) => state.storeWork.bannerProductCount
-  );
+  const [notListed, setNotListed] = useState(0)
+  const [inactive, setInactive] = useState(0)
+  const [incomplete, setIncomplete] = useState(0)
+  const [active, setActive] = useState(0)
+  const bannerProductCount = useSelector((state) => state.storeWork.bannerProductCount);
   const dispatch = useDispatch();
 
   const handleTabChange = useCallback(
@@ -46,28 +44,29 @@ const Dashboard = () => {
         url.searchParams.append(i, notListedPayload[i]);
       }
       fetch_without_payload("POST", url, headers).then((response) => {
-        let notList = 0;
+        let notList = 0
         response.data.map((item, index) => {
+          
           if (item._id === "Not Listed") {
-            notList = notList + Number(item.total);
-            setNotListed(notList);
+            notList = notList + Number(item.total)
+            setNotListed(notList)
           }
           if (item._id === null) {
-            notList = notList + Number(item.total);
-            setNotListed(notList);
+            notList = notList + Number(item.total)
+            setNotListed(notList)
           }
           if (item._id === "Not Listed: Offer") {
-            notList = notList + Number(item.total);
-            setNotListed(notList);
+            notList = notList + Number(item.total)
+            setNotListed(notList)
           }
           if (item._id === "Inactive") {
-            setInactive(Number(item.total));
+            setInactive(Number(item.total))
           }
           if (item._id === "Incomplete") {
-            setIncomplete(Number(item.total));
+            setIncomplete(Number(item.total))
           }
           if (item._id === "Active") {
-            setActive(Number(item.total));
+            setActive(Number(item.total))
           }
         });
       });
@@ -148,14 +147,10 @@ const Dashboard = () => {
       },
     };
     const url = new URL(
-      "https://multi-account.sellernext.com/home/public/connector/product/getStatusWiseCount?&target_marketplace=eyJtYXJrZXRwbGFjZSI6ImFsbCIsInNob3BfaWQiOm51bGx9"
+      "https://multi-account.sellernext.com/home/public/connector/product/getMatchStatusCount"
     );
-    // for (let i in bannerPayloads) {
-    //   url.searchParams.append(i, bannerPayloads[i]);
-    // }
-    fetch_without_payload("GET", url, headers).then((response) => {
-      console.log(response);
-      dispatch(bannerCount(response.data.not_linked));
+    fetch_with_payload("GET", url, postHeaders,bannerPayloads).then((response) => {
+      dispatch(bannerCount(response.data.not_linked))
     });
   }, []);
   return (
@@ -176,21 +171,19 @@ const Dashboard = () => {
                   shipping labels in Shopify.
                 </p>
               </div>
-              {bannerProductCount !== 0 && (
-                <Card>
-                  <Banner
-                    title={`${bannerProductCount} Products are yet to be linked!`}
-                    status="warning"
-                    action={{ content: "Link Products", url: "" }}
-                    onDismiss={() => {}}
-                  >
-                    <p>
-                      Link Amazon Listings with Shopify products to manage
-                      inventory and Amazon orders.
-                    </p>
-                  </Banner>
-                </Card>
-              )}
+              {bannerProductCount !== 0 && <Card>
+                <Banner
+
+                  title={`${bannerProductCount} Products are yet to be linked!`}
+                  status="warning"
+                  action={{ content: "Link Products", url: "" }}
+                  onDismiss={() => {}}
+                >
+                  <p>
+                  Link Amazon Listings with Shopify products to manage inventory and Amazon orders.
+                  </p>
+                </Banner>
+              </Card>}
               <Card>
                 <Tabs
                   tabs={tabs}

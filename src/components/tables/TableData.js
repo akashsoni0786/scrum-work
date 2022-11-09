@@ -48,6 +48,7 @@ import {
 import { headers, postHeaders } from "../../utils/api/Headers";
 import ActionListInPopover from "../tablePopover/TablePopover";
 import { FilterTags } from "../rightbar/FilterTags";
+import ErrorModals from "../common/modals/Modals";
 const ftghfg = [
   {
     title: "Name",
@@ -104,6 +105,10 @@ const Tables = () => {
   const searchContainerId = useSelector(
     (state) => state.storeWork.searchContainerId
   );
+
+  const searchModeVisibility = useSelector(
+    (state) => state.storeWork.searchMode
+  );
   const [badgeStatus, setBadgestatus] = useState({
     Error: "critical",
     Inactive: "critical",
@@ -123,6 +128,9 @@ const Tables = () => {
   const [amazonLookupResponse, setAmazonLookupResponse] = useState("");
   const [amazonLookupToast, setAmazonLookupToast] = useState(false);
   const [amazonSyncResponse, setAmazonSyncResponse] = useState("");
+  const [importFileResponse, setImportFileResponse] = useState("");
+  const [importFileResponseValue, setImportFileResponseValue] = useState("");
+
   const [amazonSyncToast, setAmazonSyncToast] = useState(false);
   const [activeBulkUpdate, setActiveBulkUpdate] = useState(false);
   const [selectedImage, setSelectedImage] = useState(true);
@@ -137,15 +145,16 @@ const Tables = () => {
   const [previousPages, setPreviousPages] = useState("");
   const [inProgressActivity, setinProgressActivity] = useState([]);
   const [activityModal, setActivityModal] = useState(false);
-  const [showProductError,setShowProductError] = useState("")
-  const handleActivityClose = useCallback(() => setActivityModal(!activityModal), [activityModal]);
-  const handleActivityProceed = ()=>{
+  const [showProductError, setShowProductError] = useState("");
+  const handleActivityClose = useCallback(
+    () => setActivityModal(!activityModal),
+    [activityModal]
+  );
+  const handleActivityProceed = () => {
     fetchalldata();
     fetchRestData();
-    setActivityModal(false)
-  }
-
-
+    setActivityModal(false);
+  };
   const columns = [
     {
       title: "Image",
@@ -298,13 +307,15 @@ const Tables = () => {
   };
   const inProgress = (param) => {
     console.log(param.process_tags);
-    setinProgressActivity(param.process_tags)
-    setActivityModal(true)
+    setinProgressActivity(param.process_tags);
+    setActivityModal(true);
   };
-  const viewErrorModal=(data)=>{
-    console.log(data)
-    // alert()
-  }
+  const [errorModal, setErrorModal] = useState(false);
+  const handleErrorClose = useCallback(() => setErrorModal(!errorModal), [errorModal]);
+  const viewErrorModal = (data) => {
+    console.log(data);
+    setErrorModal(true);
+  };
   const fetchalldata = () => {
     setLoading(true);
     setHasData(false);
@@ -316,12 +327,7 @@ const Tables = () => {
       "https://multi-account.sellernext.com/home/public/connector/product/getRefineProducts"
     );
 
-    for (let i in payloads) {
-      url.searchParams.append(i, payloads[i]);
-    }
-
     for (let key in resultFilter) {
-      console.log(key);
       if (resultFilter.hasOwnProperty(key)) {
         if (key === "inventory" && resultFilter[key].value !== "") {
           payloads[`filter[items.quantity][${resultFilter[key].option}]`] =
@@ -353,16 +359,12 @@ const Tables = () => {
         }
       }
     }
-    console.log("searchContainerId", searchContainerId);
-    if (searchContainerId !== "") {
-      payloads["filter[cif_amazon_multi_inactive][1]"] = "Not Listed";
+
+    if (searchModeVisibility === "On" && searchContainerId !== "") {
       payloads["filter[container_id][1]"] = searchContainerId;
       payloads["productOnly"] = true;
     }
-
-    for (let i in payloads) {
-      url.searchParams.append(i, payloads[i]);
-    }
+    
     if (nextPages !== "") {
       payloads["next"] = nextPages;
     }
@@ -372,9 +374,200 @@ const Tables = () => {
     const pageCountUrl = new URL(
       "https://multi-account.sellernext.com/home/public/connector/product/getRefineProductCount"
     );
-    payloads["productOnly"] = true;
-    payloads["target_marketplace"] =
-      "eyJtYXJrZXRwbGFjZSI6ImFsbCIsInNob3BfaWQiOm51bGx9";
+    for (let i in payloads) {
+      url.searchParams.append(i, payloads[i]);
+    }
+    fetch_without_payload("GET", pageCountUrl, headers).then((response) => {
+      setTotalPages(Math.ceil(Number(response.data.count) / 50));
+    });
+    fetch_without_payload("GET", url, headers).then((response) => {
+      let fetchedData = [];
+      if (response.data.prev !== null) setPreviousPages(response.data.prev);
+      if (response.data.next !== null) setNextPages(response.data.next);
+
+      response.data.rows.map((item, index) => {
+        let row = {
+          key: index,
+          source_product_id: item.source_product_id,
+          image: item.main_image,
+          title: item.title,
+          template: "N/A",
+          type: item.type,
+          description: item.items.map((subItem, subIndex) => ({
+            key: subIndex,
+            img:
+              subItem.main_image ||
+              "https://www.useourfacilities.com/css/images/no-image-template.png",
+            product_details: hasChildren(subItem),
+            product_title: subItem.title,
+            source_product_id: subItem.source_product_id,
+            inventory: subItem.quantity || 0,
+            amazon_status: Object.keys(subItem).includes("error") ? (
+              <Badge status="critical">Error</Badge>
+            ) : subItem.status ? (
+              <Badge status="new">{subItem.status}</Badge>
+            ) : (
+              <Badge status="surface">Not Listed</Badge>
+            ),
+          })),
+          product_details:
+            item.items.length === 1
+              ? hasChildren(item.items[0])
+              : item.items.map((subItem, subIndex) => {
+                  if (subItem.source_product_id === item.source_product_id) {
+                    return forParent(subItem);
+                  }
+                }),
+          inventory: inventoryCalculate(item.items),
+          amazon_status:
+            amazonStatus(item)[0] === "error" ? (
+              <>
+                <Badge status="critical">Error</Badge>
+                <br />
+                {/* <a
+                  onClick={() => {
+                    setShowProductError(amazonStatus(item)[1]);
+                  }}
+                  href
+                > */}
+                  <a onClick={()=>viewErrorModal(item[0])} href>view Error</a>
+                  {/* <a onClick={()=>{showProductErrorFunc(amazonStatus(item)[1])}} href> */}
+                  {/* view error
+                </a> */}
+              </>
+            ) : (
+              <Badge status="new">{amazonStatus(item)}</Badge>
+            ),
+          activity:
+            Object.keys(item).includes("process_tags") ||
+            Object.keys(item.items[0]).includes("process_tags") ? (
+              <Button
+                plain
+                monochrome
+                onClick={() => inProgress(item.items[0] || item.process_tags)}
+              >
+                <Icon source={ClockMinor} />
+                In progress
+              </Button>
+            ) : (
+              "--"
+            ),
+          actions: "",
+        };
+        fetchedData = [...fetchedData, row];
+      });
+      dispatch(alldata(fetchedData));
+      setLoading(false);
+      setHasData(true);
+    });
+  };
+  const amazonStatus = (item) => {
+    var status = "";
+    if (item.items.length === 1) {
+      if (Object.keys(item.items[0]).includes("error")) {
+        return ["error", "Product Error : " + item.items[0]["error"].product];
+      } else if (Object.keys(item.items[0]).includes("status"))
+        status = item.items[0]["status"];
+      else status = "Not Listed";
+    } else {
+      if (Object.keys(item.items[0]).includes("error")) {
+        return ["error", "Product Error : " + item.items[0]["error"].product];
+      } else {
+        status = "Not Listed";
+      }
+    }
+    return [status, ""];
+  };
+  const fetchRestData = () => {
+    setLoading(true);
+    setHasData(false);
+    let payloads = {
+      target_marketplace: "eyJtYXJrZXRwbGFjZSI6ImFsbCIsInNob3BfaWQiOm51bGx9",
+    };
+    if (currentTab === "Not Listed") {
+      payloads = {
+        count: 50,
+        "filter[cif_amazon_multi_inactive][1]": "Not Listed",
+        productOnly: true,
+        target_marketplace: "eyJtYXJrZXRwbGFjZSI6ImFsbCIsInNob3BfaWQiOm51bGx9",
+      };
+    }
+    if (currentTab === "Inactive") {
+      payloads = {
+        count: 50,
+        "filter[items.status][1]": "Inactive",
+      };
+    }
+    if (currentTab === "Incomplete") {
+      payloads = {
+        count: 50,
+        "filter[items.status][1]": "Incomplete",
+      };
+    }
+    if (currentTab === "Active") {
+      payloads = {
+        count: 50,
+        "filter[items.status][1]": "Active",
+      };
+    }
+    if (currentTab === "Error") {
+      payloads = {
+        count: 50,
+        "filter[cif_amazon_multi_activity][1]": "error",
+      };
+    }
+    let url = new URL(
+      "https://multi-account.sellernext.com/home/public/connector/product/getRefineProducts"
+    );
+    for (let key in resultFilter) {
+      if (resultFilter.hasOwnProperty(key)) {
+        if (key === "inventory" && resultFilter[key].value !== "") {
+          payloads[`filter[items.quantity][${resultFilter[key].option}]`] =
+            resultFilter[key].value;
+        }
+        if (key === "sku" && resultFilter[key].value !== "") {
+          payloads[`filter[items.sku][${resultFilter[key].option}]`] =
+            resultFilter[key].value;
+        }
+        if (key === "tags" && resultFilter[key].value !== "") {
+          payloads[`filter[tags][3]`] = resultFilter[key].value;
+        }
+        if (key === "vendor" && resultFilter[key].value !== "") {
+          payloads[`filter[brand][${resultFilter[key].option}]`] =
+            resultFilter[key].value;
+        }
+        if (key === "productStatus" && resultFilter[key].option !== "") {
+          payloads[`filter[items.status][1]`] = resultFilter[key].option;
+        }
+        if (key === "variantAttributes" && resultFilter[key].value !== "") {
+          payloads[`filter[variant_attributes][1]`] = resultFilter[key].option;
+        }
+        if (key === "activity" && resultFilter[key].value !== "") {
+          payloads[`filter[cif_amazon_multi_activity][1]`] =
+            resultFilter[key].option;
+        }
+        if (key === "type" && resultFilter[key].option !== "") {
+          payloads[`filter[type][1]`] = resultFilter[key].option;
+        }
+      }
+    }
+    if (searchModeVisibility === "On" && searchContainerId !== "") {
+      payloads["filter[container_id][1]"] = searchContainerId;
+      payloads["productOnly"] = true;
+    }
+    
+    if (nextPages !== "") {
+      payloads["next"] = nextPages;
+    }
+    if (previousPages !== "") {
+      payloads["prev"] = previousPages;
+    }
+    const pageCountUrl = new URL(
+      "https://multi-account.sellernext.com/home/public/connector/product/getRefineProductCount"
+    );
+    for (let i in payloads) {
+      url.searchParams.append(i, payloads[i]);
+    }
     fetch_without_payload("GET", pageCountUrl, headers).then((response) => {
       setTotalPages(Math.ceil(Number(response.data.count) / 50));
     });
@@ -417,20 +610,24 @@ const Tables = () => {
                 }),
           inventory: inventoryCalculate(item.items),
           amazon_status:
-            amazonStatus(item)[0] === "error" ?(
+            amazonStatus(item)[0] === "error" ? (
               <>
-              <Badge status="critical">Error</Badge>
-              <br />
-              <a onClick={()=>{setShowProductError(amazonStatus(item)[1])}} href>
-              {/* <p onClick={()=>viewErrorModal(item[0])}>View Error</p> */}
-              {/* <a onClick={()=>{showProductErrorFunc(amazonStatus(item)[1])}} href> */}
-              
-                view error
-              </a>
+                <Badge status="critical">Error</Badge>
+                <br />
+                <a
+                  onClick={() => {
+                    setShowProductError(amazonStatus(item)[1]);
+                  }}
+                  href
+                >
+                  {/* <p onClick={()=>viewErrorModal(item[0])}>View Error</p> */}
+                  {/* <a onClick={()=>{showProductErrorFunc(amazonStatus(item)[1])}} href> */}
+                  view error
+                </a>
               </>
-            ):
-            <Badge status="new">{amazonStatus(item)}</Badge>
-            ,
+            ) : (
+              <Badge status="new">{amazonStatus(item)}</Badge>
+            ),
           activity:
             Object.keys(item).includes("process_tags") ||
             Object.keys(item.items[0]).includes("process_tags") ? (
@@ -455,188 +652,26 @@ const Tables = () => {
       setHasData(true);
     });
   };
-  const amazonStatus = (it) => {
-    var status = "";
-    if (it.items.length === 1) {
-      if (Object.keys(it.items[0]).includes("error")) {
-        return ["error", "Product Error : " + it.items[0]["error"].product];
-      } else if (Object.keys(it.items[0]).includes("status"))
-        status = it.items[0]["status"];
-      else status = "Not Listed";
-    } else {
-      if (Object.keys(it.items[0]).includes("error")) {
-        return ["error", "Product Error : " + it.items[0]["error"].product];
-      } else {
-        status = "Not Listed";
-      }
-    }
-    return [status, ""];
-  };
-  const fetchRestData = () => {
-    setHasData(false);
-    setLoading(true);
-
-    const pageCountUrl = new URL(
-      "https://multi-account.sellernext.com/home/public/connector/product/getRefineProductCount"
-    );
-    let url = new URL(
-      "https://multi-account.sellernext.com/home/public/connector/product/getRefineProducts?"
-    );
-    let payloads = {
-      count: 50,
-      productOnly:true,
-      target_marketplace: "eyJtYXJrZXRwbGFjZSI6ImFsbCIsInNob3BfaWQiOm51bGx9",
-    }
-    for (let i in payloads) {
-      pageCountUrl.searchParams.append(i, payloads[i]);
-    }
-
-    if (searchContainerId !== "") {
-      payloads["filter[container_id][1]="] = searchContainerId;
-    }
-    for (let key in resultFilter) {
-      console.log(key);
-      if (resultFilter.hasOwnProperty(key)) {
-        if (key === "inventory" && resultFilter[key].value !== "") {
-          payloads[`filter[items.quantity][${resultFilter[key].option}]`] =
-            resultFilter[key].value;
-        }
-        if (key === "sku" && resultFilter[key].value !== "") {
-          payloads[`filter[items.sku][${resultFilter[key].option}]`] =
-            resultFilter[key].value;
-        }
-        if (key === "tags" && resultFilter[key].value !== "") {
-          payloads[`filter[tags][3]`] = resultFilter[key].value;
-        }
-        if (key === "vendor" && resultFilter[key].value !== "") {
-          payloads[`filter[brand][${resultFilter[key].option}]`] =
-            resultFilter[key].value;
-        }
-        if (key === "productStatus" && resultFilter[key].option !== "") {
-          payloads[`filter[items.status][1]`] = resultFilter[key].option;
-        }
-        if (key === "variantAttributes" && resultFilter[key].value !== "") {
-          payloads[`filter[variant_attributes][1]`] = resultFilter[key].option;
-        }
-        if (key === "activity" && resultFilter[key].value !== "") {
-          payloads[`filter[cif_amazon_multi_activity][1]`] =
-            resultFilter[key].option;
-        }
-        if (key === "type" && resultFilter[key].option !== "") {
-          payloads[`filter[type][1]`] = resultFilter[key].option;
-        }
-      }
-    }
-   
-    if (currentTab === "Not Listed") {
-      payloads["filter[cif_amazon_multi_inactive][1]"] = "Not Listed";
-    }
-    if (currentTab === "Inactive") {
-      payloads["filter[items.status][1]"] = "Inactive";
-    }
-    if (currentTab === "Incomplete") {
-      payloads["filter[items.status][1]"] = "Incomplete";
-    }
-    if (currentTab === "Active") {
-      payloads["filter[items.status][1]"] = "Active";
-    }
-    if (currentTab === "Error") {
-      payloads["filter[cif_amazon_multi_activity][1]"] = "Active";
-    }
-
-    if (nextPages !== "") {
-      url = url + "next=" + nextPages;
-    }
-    if (previousPages !== "") {
-      url = url + "prev=" + previousPages;
-    }
-    fetch_without_payload("GET", pageCountUrl, headers).then((response) => {
-      setTotalPages(Math.ceil(Number(response.data.count) / 50));
-    });
-
-    fetch_without_payload("GET", url, headers).then((response) => {
-      let fetchedData = [];
-      if (response.data.prev !== null) setPreviousPages(response.data.prev);
-      if (response.data.next !== null) setNextPages(response.data.next);
-      response.data.rows.map((item, index) => {
-        let row = {
-          key: index+Math.random(),
-          source_product_id: item.source_product_id,
-          image: item.main_image,
-          title: item.title,
-          template: "N/A",
-          type: item.type,
-          description: item.items.map((subItem, subIndex) => ({
-            key: subIndex,
-            img:
-              subItem.main_image ||
-              "https://www.useourfacilities.com/css/images/no-image-template.png",
-            product_details: hasChildren(subItem),
-            product_title: subItem.title,
-            source_product_id: subItem.source_product_id,
-            inventory: subItem.quantity || 0,
-            amazon_status: 
-            amazonStatus(item)[0] === "error" ?(
-              <>
-              <Badge status="critical">Error</Badge>
-              <br />
-              <p onClick={()=>{setShowProductError(amazonStatus(item)[1])}} >
-                view error
-              </p>
-              </>
-            ):
-            <Badge status="new">{amazonStatus(item)}</Badge>
-            ,
-          })),
-          product_details:
-            item.items.length === 1
-              ? hasChildren(item.items[0])
-              : item.items.map((subItem, subIndex) => {
-                  if (subItem.source_product_id === item.source_product_id) {
-                    return forParent(subItem);
-                  }
-                }),
-          inventory: inventoryCalculate(item.items),
-          amazon_status: item.status || <Badge>Not Listed</Badge>,
-          activity:
-          (Object.keys(item).includes("process_tags") ||
-          Object.keys(item.items[0]).includes("process_tags")) ? (
-            <Button
-              plain
-              monochrome
-              onClick={() => inProgress(item.items[0].process_tags || item.process_tags)}
-            >
-              <Icon source={ClockMinor} />
-              In progress
-            </Button>
-          ) : (
-            "--"
-          ),
-          actions: "",
-        };
-        fetchedData = [...fetchedData, row];
-      });
-
-      dispatch(alldata(fetchedData));
-      setLoading(false);
-      setHasData(true);
-    });
-  };
   React.useEffect(() => {
-    if (currentTab === "All") fetchalldata();
-    else fetchRestData();
+    if (currentTab === "All") {
+      fetchalldata();
+    }
+    if (currentTab === "All" && searchModeVisibility === "On") {
+      fetchalldata();
+    } else {
+      fetchRestData();
+    }
   }, [
     currentTab,
-    searchContent,
+    searchContainerId,
+    searchModeVisibility,
     pageCount,
     resultFltrInventoryvalue,
     resultFilter,
   ]);
-
   React.useEffect(() => {
     setPageCount(1);
   }, [currentTab]);
-
   const tableProps = {
     loading,
     expandable,
@@ -765,27 +800,25 @@ const Tables = () => {
   const handleDropZoneDrop = useCallback(
     (_dropFiles, acceptedFiles, _rejectedFiles) => {
       if (acceptedFiles[0].name.includes(".csv")) {
-        setFiles(acceptedFiles);
+        setFiles(acceptedFiles[0]);
         setUploadedFileName(acceptedFiles[0].name);
         if (files === []) {
           setSelectedImage(true);
+          importFileResponseValue("Please choose file");
         } else {
           setSelectedImage(false);
           setFiles(acceptedFiles);
         }
       } else {
-        alert("This is not a csv file");
+        importFileResponseValue("This is not a csv file");
       }
 
       // acceptedFiles = _dropFiles.filter((file) => file.type === "text.csv");
       // _rejectedFiles = _dropFiles.filter((file) => file.type !== "text.csv");
-
-
     },
     []
   );
   const validImageTypes = "text/csv";
-
   const fileUpload = !files.length && (
     <DropZone.FileUpload actionHint="Accepts  csv only" />
   );
@@ -812,19 +845,34 @@ const Tables = () => {
       </Stack>
     </div>
   );
-
+  const toggleFileUploadToast = useCallback(
+    () => setImportFileResponse((importFileResponse) => !importFileResponse),
+    []
+  );
+  const toasrMarkupFileUploadToast = importFileResponse ? (
+    <Toast
+      content={importFileResponseValue}
+      onDismiss={toggleFileUploadToast}
+    />
+  ) : null;
   const ImportedActionProceed = () => {
     const formData = new FormData();
-    formData.append("file", files[0]);
+
+    formData.append("file", files);
     let url = new URL(
       "https://multi-account.sellernext.com/home/public/connector/csv/importCSV"
     );
     let payload = {
       file: formData,
-    }
-    fetch_fileUpload("POST", url, postHeaders,payload).then((response) => {
-      console.log(response);
+    };
+    fetch_fileUpload("POST", url, headers, payload.file).then((response) => {
+      console.log(response)
     });
+    setImportFileResponse(true);
+    setImportFileResponseValue(
+      "No export history found, kindly export data first to import and edit"
+    );
+    setActiveImportedAction(false);
   };
 
   const [activeExportedAction, setActiveExportedAction] = useState(false);
@@ -853,6 +901,7 @@ const Tables = () => {
   };
   return (
     <>
+      {toasrMarkupFileUploadToast}
       <div style={{ margin: "10px 5px" }}>
         <Stack wrap={false}>
           <Searchbar />
@@ -928,7 +977,7 @@ const Tables = () => {
             &nbsp;&nbsp; {totalPages ? pageCount : 0}&nbsp;/&nbsp; {totalPages}{" "}
             Page &nbsp;&nbsp;
           </b>
-          <Button onClick={nextPageFunc} disabled={nextPages === ""}>
+          <Button onClick={nextPageFunc} disabled={pageCount === totalPages}>
             <Icon source={ArrowRightMinor} color="base" />
           </Button>
         </ButtonGroup>
@@ -1092,11 +1141,7 @@ Selected Products: 0 Product"
                   />
                 </div>
                 <br />
-                <Banner
-                  // title="Before you can purchase a shipping label, this change needs to be made:"
-                  // action={{ content: "Edit address" }}
-                  status="warning"
-                >
+                <Banner status="warning">
                   <p>
                     To ensure seamless Product update, export the Product
                     information in the form of a CSV file, make the necessary
@@ -1168,29 +1213,62 @@ Selected Products: 0 Product"
         </Modal>
 
         <Modal
+          // activator={activator}
+          open={activityModal}
+          onClose={handleActivityClose}
+          title="Actions in progress"
+          primaryAction={{
+            content: "Refresh to update status",
+            onAction: handleActivityProceed,
+          }}
+          secondaryActions={[
+            {
+              content: "Close",
+              onAction: handleActivityClose,
+            },
+          ]}
+        >
+          <Modal.Section>
+            <TextContainer>
+              {inProgressActivity.map((i, index) => {
+                return (
+                  <p>
+                    <b>{index + 1}:&nbsp;&nbsp;</b>
+                    {i}
+                  </p>
+                );
+              })}
+            </TextContainer>
+          </Modal.Section>
+        </Modal>
+        <ErrorModals errorModal={errorModal} handleErrorClose={handleErrorClose} />
+        {/* <Modal
         // activator={activator}
-        open={activityModal}
-        onClose={handleActivityClose}
-        title="Actions in progress"
+        open={errorModal}
+        onClose={handleErrorClose}
+        title="Reach more shoppers with Instagram product tags"
         primaryAction={{
-          content: 'Refresh to update status',
-          onAction: handleActivityProceed,
+          content: 'Add Instagram',
+          onAction: handleErrorClose,
         }}
         secondaryActions={[
           {
-            content: 'Close',
-            onAction: handleActivityClose,
+            content: 'Learn more',
+            onAction: handleErrorClose,
           },
         ]}
       >
         <Modal.Section>
           <TextContainer>
-            {inProgressActivity.map((i,index)=>{
-              return <p><b>{index+1}:&nbsp;&nbsp;</b>{i}</p>
-            })}
+            
+            <p>
+              Use Instagram posts to share your products with millions of
+              people. Let shoppers buy from your store without leaving
+              Instagram.
+            </p>
           </TextContainer>
         </Modal.Section>
-      </Modal>
+      </Modal> */}
       </div>
     </>
   );
